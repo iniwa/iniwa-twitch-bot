@@ -1,0 +1,14 @@
+services:
+  twitch-bot:
+    build: .
+    container_name: twitch-bot
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+      # 変更点：保存先を「video/twitch-archive」に変更
+      - /mnt/nas/video/twitch-archive:/app/downloads
+    environment:
+      - TZ=Asia/Tokyo
+    user: "1000:1000"
