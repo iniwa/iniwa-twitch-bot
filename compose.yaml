@@ -8,7 +8,7 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - /home/iniwa/docker/twitch-bot:/app
+      - /home/iniwa/docker/twitch-bot/data:/app/data
       # 変更点：保存先を「video/twitch-archive」に変更
       - /mnt/nas/video/twitch-archive:/app/downloads
     environment:
