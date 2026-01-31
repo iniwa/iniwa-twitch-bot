@@ -125,12 +125,30 @@ def get_broadcaster_headers(conf):
     return {'Client-ID': conf['client_id'], 'Authorization': f"Bearer {token}", 'Content-Type': 'application/json'}
 
 def get_stream_info(conf):
-    try:
-        url = f"https://api.twitch.tv/helix/streams?user_id={conf['broadcaster_id']}"
-        r = requests.get(url, headers=get_headers(conf), timeout=5)
-        if r.status_code == 200 and r.json()['data']: 
-            return True, r.json()['data'][0]
-    except: pass
+    retries = 3
+    for attempt in range(retries):
+        try:
+            url = f"https://api.twitch.tv/helix/streams?user_id={conf['broadcaster_id']}"
+            r = requests.get(url, headers=get_headers(conf), timeout=5)
+            if r.status_code == 200:
+                # APIからの応答が正常かつデータが存在すれば、ライブ状態として返す
+                if r.json().get('data'):
+                    return True, r.json()['data'][0]
+                # データが空の場合はオフライン
+                else:
+                    return False, None
+            # 200以外のステータスコードはログに残すが、リトライは継続
+            c.log(f"⚠️ API check (attempt {attempt+1}) returned status {r.status_code}")
+        except requests.exceptions.RequestException as e:
+            # ネットワーク関連のエラーはログに残し、リトライ
+            c.log(f"⚠️ API check (attempt {attempt+1}) failed with error: {e}")
+        
+        # リトライ前に短時間待機
+        if attempt < retries - 1:
+            time.sleep(3)
+            
+    # 全てのリトライが失敗した場合のみ、オフラインとして扱う
+    c.log("❌ API check failed after multiple retries. Assuming offline.")
     return False, None
 
 def check_stream_status_and_update(conf):
