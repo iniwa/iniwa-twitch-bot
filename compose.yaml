@@ -7,6 +7,8 @@ services:
     restart: unless-stopped
     ports:
       - "8501:8501"
+    networks:
+      - host
     volumes:
       - /home/iniwa/docker/twitch-bot/data:/app/data
       # 変更点：保存先を「video/twitch-archive」に変更
