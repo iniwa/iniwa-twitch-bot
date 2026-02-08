@@ -5,8 +5,6 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
-    ports:
-      - "8501:8501"
     network_mode: "host"
     volumes:
       - /home/iniwa/docker/twitch-bot/data:/app/data
