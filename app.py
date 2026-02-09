@@ -115,26 +115,27 @@ def index():
 
     return render_template_string(HTML_TEMPLATE, config=conf, logs=c.logs, active_viewers=active_viewers, history=filtered_history, active_uids=active_uids, current_game=current_game, unique_games=unique_games, current_prediction=current_prediction, now=now)
 
+# app.py の analytics_list 関数内を修正
+
 @app.route('/analytics')
 def analytics_list():
     index_file = 'data/history/stream_index.json'
     index_data = {}
     sorted_list = []
     
+    # 既存の読み込み処理
     if os.path.exists(index_file):
         try:
             with open(index_file, 'r', encoding='utf-8') as f:
                 index_data = json.load(f)
                 for sid, data in index_data.items():
                     data['sid'] = sid
-                    
                     if data.get('start_time'):
                         try:
                             dt = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
                             dt_jst = dt.astimezone(c.JST)
                             data['start_time'] = dt_jst.isoformat()
                         except: pass
-
                     dur = data.get('duration', '')
                     if dur and 'm' in dur and 's' in dur:
                         data['duration_short'] = re.sub(r'\d+s$', '', dur)
@@ -144,8 +145,44 @@ def analytics_list():
                 sorted_list.sort(key=lambda x: x.get('start_time', ''), reverse=True)
         except: pass
 
+    # --- ★追加: フォロワー推移データの集計 ---
+    viewers = c.load_viewers()
+    daily_changes = {}
+    
+    for uid, data in viewers.items():
+        # フォロー日での加算
+        if data.get("followed_at"):
+            f_date = data["followed_at"]
+            daily_changes[f_date] = daily_changes.get(f_date, 0) + 1
+        # 解除日での減算
+        if data.get("unfollowed_at"):
+            u_date = data["unfollowed_at"]
+            daily_changes[u_date] = daily_changes.get(u_date, 0) - 1
+
+    follower_history = []
+    current_count = 0
+    
+    # 日付順にソートして累積計算
+    if daily_changes:
+        sorted_dates = sorted(daily_changes.keys())
+        # データ開始日以前を0として計算開始
+        for d_str in sorted_dates:
+            current_count += daily_changes[d_str]
+            # 負の数にならないよう補正（データ不整合対策）
+            if current_count < 0: current_count = 0
+            follower_history.append({"x": d_str, "y": current_count})
+            
+        # 今日の日付まで線を伸ばすためのダミーデータ
+        today_str = c.get_now().strftime('%Y-%m-%d')
+        if sorted_dates[-1] < today_str:
+            follower_history.append({"x": today_str, "y": current_count})
+
+    # JSON化
+    follower_history_json = json.dumps(follower_history, ensure_ascii=False)
     all_streams_json = json.dumps(sorted_list, ensure_ascii=False)
-    return render_template_string(ANALYTICS_TEMPLATE, view='list', index_data=index_data, sorted_list=sorted_list, all_streams_json=all_streams_json)
+
+    # テンプレートへ渡す引数に follower_history_json を追加
+    return render_template_string(ANALYTICS_TEMPLATE, view='list', index_data=index_data, sorted_list=sorted_list, all_streams_json=all_streams_json, follower_history_json=follower_history_json)
 
 @app.route('/analytics/stream/<stream_id>')
 def analytics_detail(stream_id):

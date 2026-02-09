@@ -822,6 +822,7 @@ ANALYTICS_TEMPLATE = """
     <script>
         // --- データ受け渡し ---
         const allStreams = {{ all_streams_json | safe }};
+        const followerHistory = {{ follower_history_json | safe }};
         let trendChart = null;
         let timelineChart = null; // 週間チャート用
         
@@ -1226,7 +1227,7 @@ ANALYTICS_TEMPLATE = """
             
             // データセット作成
             const pointsViewers = data.map(s => ({ x: s.start_time, y: s.max_viewers, title: s.title, game: s.game_name }));
-            const pointsFollowers = data.map(s => ({ x: s.start_time, y: s.follower_count || null, title: s.title, game: s.game_name }));
+            // const pointsFollowers = data.map(s => ({ x: s.start_time, y: s.follower_count || null, title: s.title, game: s.game_name }));
             const pointsDurations = data.map(s => {
                 if (!s.duration || typeof s.duration !== 'string') return { x: s.start_time, y: 0 };
                 const parts = s.duration.match(/(\d+)h\s*(\d+)m/) || s.duration.match(/(\d+)m/);
@@ -1245,7 +1246,18 @@ ANALYTICS_TEMPLATE = """
                 data: {
                     datasets: [
                         { label: '最大同接数', data: pointsViewers, borderColor: '#6441a5', backgroundColor: '#6441a5', yAxisID: 'y', tension: 0.1 },
-                        { label: 'フォロワー数', data: pointsFollowers, borderColor: '#e91e63', backgroundColor: '#e91e63', yAxisID: 'y1', tension: 0.1, pointStyle: 'rectRot', pointRadius: 4 },
+                        // ★修正: フォロワー数データのソースを followerHistory に変更し、見た目を調整
+                        { 
+                            label: 'フォロワー数', 
+                            data: followerHistory, 
+                            borderColor: '#e91e63', 
+                            backgroundColor: '#e91e63', 
+                            yAxisID: 'y1', 
+                            tension: 0.1, 
+                            pointRadius: 0, // 点を消して線のみにする（データが多いと見づらいため）
+                            borderWidth: 2,
+                            stepped: true   // 階段状のグラフにする（日次データに適している）
+                        },
                         { label: '配信時間(分)', data: pointsDurations, borderColor: '#009688', backgroundColor: 'rgba(0,150,136,0.1)', fill: true, tension: 0.1, yAxisID: 'y2' }
                     ]
                 },
