@@ -1,15 +1,18 @@
 services:
   twitch-bot:
-    build: .
+    # GitHub Actionsで作ったイメージを指定 (リポジトリ名が twitch-tool の場合の例)
+    # ※ もしリポジトリ名が違う場合は "ghcr.io/iniwa/実際のリポジトリ名:latest" にしてください
+    image: ghcr.io/iniwa/iniwa-twitch-bot:latest
+    
     container_name: twitch-bot
-    labels:
-      - "com.centurylinklabs.watchtower.enable=false"
     restart: unless-stopped
     network_mode: "host"
     volumes:
+      # 設定ファイル等の永続化データ
       - /home/iniwa/docker/twitch-bot/data:/app/data
-      # 変更点：保存先を「video/twitch-archive」に変更
+      # 録画データの保存先 (NAS)
       - /mnt/nas/video/twitch-archive:/app/downloads
     environment:
       - TZ=Asia/Tokyo
+    # イメージ側でUSER設定済みですが、念のため指定してもOK
     user: "1000:1000"
