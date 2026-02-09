@@ -184,8 +184,9 @@ def analytics_detail(stream_id):
 @app.route('/download_vod/<stream_id>', methods=['POST'])
 def download_vod_manual(stream_id):
     conf = c.load_config()
-    idx = w.load_stream_index()
-    threading.Thread(target=w.execute_download, args=(conf, stream_id, idx)).start()
+    # idx = w.load_stream_index()  <-- 不要なので削除
+    # argsから idx を削除
+    threading.Thread(target=w.execute_download, args=(conf, stream_id)).start()
     return redirect(url_for('analytics_list'))
 
 @app.route('/download_all_vods', methods=['POST'])

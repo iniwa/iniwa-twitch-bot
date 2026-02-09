@@ -125,47 +125,60 @@ def get_broadcaster_headers(conf):
     return {'Client-ID': conf['client_id'], 'Authorization': f"Bearer {token}", 'Content-Type': 'application/json'}
 
 def get_stream_info(conf):
+    """
+    戻り値: (success: bool, data: dict|None)
+    success=True, data=None -> オフライン (正常)
+    success=True, data={...} -> オンライン (正常)
+    success=False, data=None -> APIエラー (通信失敗)
+    """
     retries = 3
     for attempt in range(retries):
         try:
             url = f"https://api.twitch.tv/helix/streams?user_id={conf['broadcaster_id']}"
             r = requests.get(url, headers=get_headers(conf), timeout=5)
             if r.status_code == 200:
-                # APIからの応答が正常かつデータが存在すれば、ライブ状態として返す
                 if r.json().get('data'):
                     return True, r.json()['data'][0]
-                # データが空の場合はオフライン
                 else:
-                    return False, None
-            # 200以外のステータスコードはログに残すが、リトライは継続
-            c.log(f"⚠️ API check (attempt {attempt+1}) returned status {r.status_code}")
+                    return True, None # オフライン
+            c.log(f"⚠️ API check (attempt {attempt+1}) status {r.status_code}")
         except requests.exceptions.RequestException as e:
-            # ネットワーク関連のエラーはログに残し、リトライ
-            c.log(f"⚠️ API check (attempt {attempt+1}) failed with error: {e}")
+            c.log(f"⚠️ API check (attempt {attempt+1}) error: {e}")
         
-        # リトライ前に短時間待機
         if attempt < retries - 1:
             time.sleep(3)
             
-    # 全てのリトライが失敗した場合のみ、オフラインとして扱う
-    c.log("❌ API check failed after multiple retries. Assuming offline.")
-    return False, None
+    c.log("❌ API check failed. Network issue?")
+    return False, None # 通信エラー
 
 def check_stream_status_and_update(conf):
-    is_live, stream_data = get_stream_info(conf)
-    if is_live and stream_data and c.current_stream_id == stream_data['id']:
-        idx = load_stream_index()
-        if c.current_stream_id in idx:
-            updated = False
-            if idx[c.current_stream_id].get('title') != stream_data['title']:
-                idx[c.current_stream_id]['title'] = stream_data['title']; updated = True
-            if idx[c.current_stream_id].get('game_name') != stream_data['game_name']:
-                idx[c.current_stream_id]['game_name'] = stream_data['game_name']; updated = True
-            thumb = stream_data.get('thumbnail_url', '').replace('{width}', '%{width}').replace('{height}', '%{height}')
-            if thumb and idx[c.current_stream_id].get('thumbnail_url') != thumb:
-                idx[c.current_stream_id]['thumbnail_url'] = thumb; updated = True
-            if updated: save_stream_index(idx)
-    return is_live, stream_data
+    """
+    戻り値: (is_live: bool, stream_data: dict|None, error: bool)
+    error=True の場合、is_liveの状態は信頼できないため無視すること
+    """
+    success, stream_data = get_stream_info(conf)
+    
+    if not success:
+        return False, None, True # エラー発生
+        
+    if stream_data:
+        # 配信中: 情報を更新
+        if c.current_stream_id == stream_data['id']:
+            idx = load_stream_index()
+            if c.current_stream_id in idx:
+                updated = False
+                if idx[c.current_stream_id].get('title') != stream_data['title']:
+                    idx[c.current_stream_id]['title'] = stream_data['title']; updated = True
+                if idx[c.current_stream_id].get('game_name') != stream_data['game_name']:
+                    idx[c.current_stream_id]['game_name'] = stream_data['game_name']; updated = True
+                thumb = stream_data.get('thumbnail_url', '').replace('{width}', '%{width}').replace('{height}', '%{height}')
+                if thumb and idx[c.current_stream_id].get('thumbnail_url') != thumb:
+                    idx[c.current_stream_id]['thumbnail_url'] = thumb; updated = True
+                if updated: save_stream_index(idx)
+        return True, stream_data, False
+    else:
+        # オフライン
+        return False, None, False
 
 def get_total_followers(conf):
     try:
@@ -416,11 +429,16 @@ def flush_logs(conf, stream_data, chatters):
     save_stream_index(idx)
 
 # --- 動画ダウンロード処理 ---
-def execute_download(conf, stream_id, idx_data):
+# --- 動画ダウンロード処理 (修正: データ競合対策) ---
+# 引数から idx_data を削除しました
+def execute_download(conf, stream_id):
     if not YT_DLP_AVAILABLE: return "yt-dlp not installed"
     
     if stream_id in cancel_requests:
         cancel_requests.discard(stream_id)
+
+    # ★修正: 実行直前に最新データをロード
+    idx_data = load_stream_index()
 
     if idx_data.get(stream_id, {}).get("vod_status") == "downloaded":
         c.log(f"ℹ️ {stream_id} は既にダウンロード済みです。")
@@ -452,13 +470,16 @@ def execute_download(conf, stream_id, idx_data):
             c.log(f"⚠️ アーカイブが見つかりませんでした (StreamID: {stream_id})")
             return "Video not found"
 
-        idx_data[stream_id]["vod_id"] = video_id
-        
+        # ★修正: ステータス更新時もロード->保存を一気に行う
+        with c.file_lock:
+            idx_data = load_stream_index() # 再ロード
+            if stream_id not in idx_data: return "Stream ID missing in index"
+            idx_data[stream_id]["vod_id"] = video_id
+            idx_data[stream_id]["vod_status"] = "downloading"
+            save_stream_index(idx_data)
+
         global download_progress
         download_progress[stream_id] = {"percent": 0, "speed": "Init...", "status": "starting"}
-
-        idx_data[stream_id]["vod_status"] = "downloading"
-        save_stream_index(idx_data)
 
         save_path = DOWNLOAD_DIR
         if not os.path.exists(save_path): os.makedirs(save_path)
@@ -478,18 +499,16 @@ def execute_download(conf, stream_id, idx_data):
         file_date = "00000000"
         file_title = "Untitled"
         
-        if stream_id in idx_data:
-            meta = idx_data[stream_id]
-            if "start_time" in meta and meta["start_time"]:
-                try:
-                    # ★変更: UTC(Z) -> JST に変換してファイル名の日付とする
-                    dt_obj = datetime.fromisoformat(meta["start_time"].replace('Z', '+00:00')).astimezone(c.JST)
-                    file_date = dt_obj.strftime('%Y%m%d')
-                except:
-                    pass
-            if "title" in meta and meta["title"]:
-                raw_title = meta["title"]
-                file_title = re.sub(r'[\\/:*?"<>|]', '_', raw_title)
+        # ファイル名生成のために再度情報取得（メモリ上のデータでOK）
+        meta = idx_data.get(stream_id, {})
+        if "start_time" in meta and meta["start_time"]:
+            try:
+                dt_obj = datetime.fromisoformat(meta["start_time"].replace('Z', '+00:00')).astimezone(c.JST)
+                file_date = dt_obj.strftime('%Y%m%d')
+            except: pass
+        if "title" in meta and meta["title"]:
+            raw_title = meta["title"]
+            file_title = re.sub(r'[\\/:*?"<>|%]', '_', raw_title)
 
         out_template = f"{save_path}/{file_date}_{file_title}.%(ext)s"
 
@@ -500,41 +519,47 @@ def execute_download(conf, stream_id, idx_data):
             'progress_hooks': [progress_hook]
         }
 
-        c.log(f"⬇️ ダウンロード開始: {video_id} -> {file_date}_{file_title}.mp4")
+        c.log(f"⬇️ ダウンロード開始: {video_id}")
         
         final_filename = None
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=True)
             final_filename = ydl.prepare_filename(info)
         
-        idx = load_stream_index()
-        if stream_id in idx:
-            idx[stream_id]["vod_status"] = "downloaded"
-            idx[stream_id]["vod_id"] = video_id
-            idx[stream_id]["file_path"] = final_filename
-            save_stream_index(idx)
+        # ★修正: 完了時も最新データをロードしてから書き込み（上書き防止）
+        with c.file_lock:
+            idx = load_stream_index() # 再ロード
+            if stream_id in idx:
+                idx[stream_id]["vod_status"] = "downloaded"
+                idx[stream_id]["vod_id"] = video_id
+                idx[stream_id]["file_path"] = final_filename
+                save_stream_index(idx)
             
         c.log(f"✅ ダウンロード完了: {final_filename}")
         if stream_id in download_progress: del download_progress[stream_id]
         return "Success"
 
     except Exception as e:
-        if "Cancelled" in str(e):
+        msg = str(e)
+        status = "failed"
+        if "Cancelled" in msg:
             c.log(f"🛑 ダウンロードを中止しました: {stream_id}")
-            idx = load_stream_index()
-            if stream_id in idx: idx[stream_id]["vod_status"] = "not_downloaded"
-            save_stream_index(idx)
-            if stream_id in download_progress: del download_progress[stream_id]
-            cleanup_temp_files(save_path, f"{file_date}_{file_title}")
-            return "Cancelled"
+            msg = "Cancelled"
+            status = "not_downloaded"
         else:
             c.log(f"❌ ダウンロード失敗: {e}")
+            if stream_id in download_progress: 
+                download_progress[stream_id] = {"percent": 0, "speed": "Error", "status": "failed"}
+
+        # エラー/キャンセル時の保存
+        with c.file_lock:
             idx = load_stream_index()
-            if stream_id in idx: idx[stream_id]["vod_status"] = "failed"
-            save_stream_index(idx)
-            if stream_id in download_progress: download_progress[stream_id] = {"percent": 0, "speed": "Error", "status": "failed"}
-            cleanup_temp_files(save_path, f"{file_date}_{file_title}")
-            return f"Failed: {e}"
+            if stream_id in idx: 
+                idx[stream_id]["vod_status"] = status
+                save_stream_index(idx)
+
+        cleanup_temp_files(save_path, f"{file_date}_{file_title}")
+        return f"Result: {msg}"
 
 def request_cancel_download(stream_id):
     c.log(f"⚠️ ダウンロード中止リクエスト: {stream_id}")
@@ -567,21 +592,24 @@ def delete_vod_file(stream_id):
         return True
     return False
 
+# --- auto_download_task (修正) ---
 def auto_download_task(conf, stream_id):
     c.log("⏳ 配信終了検知: 5分後にアーカイブ検索を開始します...")
     time.sleep(300) 
-    idx = load_stream_index()
-    execute_download(conf, stream_id, idx)
+    # 引数を削減
+    execute_download(conf, stream_id)
 
+# --- bulk_download_task (修正) ---
 def bulk_download_task(conf):
-    idx = load_stream_index()
+    idx = load_stream_index() # ここは一覧取得用なのでOK
     c.log("📦 未ダウンロードのアーカイブを一括処理します...")
     sorted_ids = sorted(idx.keys(), key=lambda k: idx[k].get('start_time', ''), reverse=True)
     count = 0
     for sid in sorted_ids:
+        # ステータス確認のために都度ロードはしないが、実行は個別に任せる
         status = idx[sid].get("vod_status")
         if status != "downloaded" and status != "downloading":
-            res = execute_download(conf, sid, idx)
+            res = execute_download(conf, sid) # idxを渡さない
             if res == "Success": count += 1
             if sid in cancel_requests: break 
             time.sleep(5)
@@ -602,13 +630,14 @@ def get_debug_status():
 def get_download_progress():
     return download_progress
 
-# --- Workers ---
+# --- Viewer Worker (修正: 誤判定防止) ---
 def viewer_worker_loop(conf):
     c.log("Viewer/Monitor Worker Started")
     fix_dangling_states()
     
     last_log_time = time.time()
     last_follow_check = 0
+    offline_streak = 0  # 連続オフライン検知回数
     ensure_directories()
     try:
         if conf.get('broadcaster_id'): sync_vod_history(conf)
@@ -632,12 +661,31 @@ def viewer_worker_loop(conf):
                 if ft > 0:
                     with stats_lock: current_minute_stats["follower_total"] = ft
 
-            is_live, stream_data = check_stream_status_and_update(conf)
+            # ★修正: エラー判定を受け取る
+            is_live, stream_data, is_error = check_stream_status_and_update(conf)
+            
+            # --- 配信終了判定のデバウンス処理 ---
+            if is_error:
+                # ★修正: APIエラー時は、カウントを進めず、既存の状態を維持してループを抜ける
+                c.log("⚠️ API接続エラー: 状態を維持して再試行します")
+                time.sleep(20)
+                continue # ここでcontinueすることで、下の終了判定に行かない
+
+            if not is_live and c.current_stream_id is not None:
+                offline_streak += 1
+                if offline_streak < 3:  # 3回連続(約60秒)までは一時的なエラーとして無視
+                    c.log(f"⚠️ オフライン検知 ({offline_streak}/3) - 待機中...")
+                    time.sleep(20)
+                    continue
+            else:
+                offline_streak = 0  # 正常にオンライン、または完全にオフラインならリセット
+            # -----------------------------------
+
+            # (以下、既存ロジックと同じですがインデントに注意)
             stream_id = stream_data['id'] if is_live and stream_data else None
 
             if conf.get("ignore_stream_status") and not is_live:
                 is_live = True; stream_id = "debug_stream"
-                # ★変更: デバッグストリームの開始時間もJSTへ
                 stream_data = {"id": "debug_stream", "title": "Debug", "game_name": "Debug", "viewer_count": 0, "started_at": c.get_now().isoformat()}
 
             if not is_live:
@@ -652,7 +700,6 @@ def viewer_worker_loop(conf):
                         if st_str:
                             try:
                                 start_dt = datetime.fromisoformat(st_str.replace('Z', '+00:00'))
-                                # ★変更: 終了時間判定にもJST考慮 (UTC同士で比較するので .now(timezone.utc) でもよいが統一)
                                 end_dt = datetime.now(timezone.utc) 
                                 duration_sec = (end_dt - start_dt).total_seconds()
                                 entry['duration'] = get_formatted_duration(duration_sec)
@@ -660,6 +707,7 @@ def viewer_worker_loop(conf):
                             except: pass
 
                     if conf.get('enable_vod_download'):
+                        # 引数を修正
                         threading.Thread(target=auto_download_task, args=(conf, finished_id)).start()
 
                     c.current_session_viewers.clear()
@@ -667,7 +715,9 @@ def viewer_worker_loop(conf):
                     c.current_game = None
                 time.sleep(20); continue
             
+            # ... (以下、配信中の処理は変更なし) ...
             if c.current_stream_id != stream_id:
+                # 配信開始時の処理...
                 c.current_stream_id = stream_id
                 c.current_game = stream_data.get('game_name')
                 c.current_session_viewers.clear()
@@ -695,7 +745,6 @@ def viewer_worker_loop(conf):
                 current_chatter_ids = set()
                 db = c.load_viewers()
                 now_ts = int(time.time())
-                # ★変更: JSTの現在時刻オブジェクト
                 now_dt = c.get_now()
                 updated = False
                 for u in chatters:
