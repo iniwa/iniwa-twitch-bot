@@ -699,12 +699,20 @@ def viewer_worker_loop(conf):
                         st_str = entry.get('start_time')
                         if st_str:
                             try:
+                                # 修正: UTC文字列をtimezone-awareなオブジェクトに変換
                                 start_dt = datetime.fromisoformat(st_str.replace('Z', '+00:00'))
-                                end_dt = datetime.now(timezone.utc) 
+                                
+                                # 修正: c.get_now() (JST) を使用して現在時刻を取得
+                                end_dt = c.get_now()
+                                
+                                # 差分を計算 (timezone-aware同士なら自動で調整されます)
                                 duration_sec = (end_dt - start_dt).total_seconds()
                                 entry['duration'] = get_formatted_duration(duration_sec)
                                 save_stream_index(idx)
-                            except: pass
+                                c.log(f"⏱️ 配信時間確定: {entry['duration']}")
+                            except Exception as e:
+                                # 修正: エラー内容をログに出力するように変更
+                                c.log(f"⚠️ 時間計算エラー: {e}")
 
                     if conf.get('enable_vod_download'):
                         # 引数を修正
