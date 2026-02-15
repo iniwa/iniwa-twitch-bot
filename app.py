@@ -292,7 +292,20 @@ def move_rule(idx, direction):
     conf['rules'] = rules; c.save_config(conf); return redirect(url_for('index'))
 
 @app.route('/add_rule', methods=['POST'])
-def add_rule(): conf = c.load_config(); conf['rules'].append({"name": f"ルール #{len(conf['rules'])+1}", "game":"All", "message":"", "interval":15, "min_comments":2}); c.save_config(conf); return redirect(url_for('index'))
+def add_rule():
+    conf = c.load_config()
+    new_rule = {
+        "name": request.form.get('name', f"ルール #{len(conf.get('rules', [])) + 1}"),
+        "game": request.form.get('game', 'All'),
+        "message": request.form.get('message', ''),
+        "interval": int(request.form.get('interval', 15)),
+        "min_comments": int(request.form.get('min_comments', 2))
+    }
+    if 'rules' not in conf:
+        conf['rules'] = []
+    conf['rules'].append(new_rule)
+    c.save_config(conf)
+    return redirect(url_for('index'))
 
 @app.route('/delete_rule/<int:idx>', methods=['POST'])
 def delete_rule(idx): conf = c.load_config(); conf['rules'].pop(idx); c.save_config(conf); return redirect(url_for('index'))

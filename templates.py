@@ -509,9 +509,12 @@ HTML_TEMPLATE = """
         <div class="card" style="order: {{ config.layout.cards.rules.order }}; grid-column: span {{ config.layout.cards.rules.span }}; {% if config.layout.cards.rules.height > 0 %}height: {{ config.layout.cards.rules.height }}px;{% endif %}">
             <h2>🎮 自動チャットルール</h2><div class="filter-bar"><button class="filter-btn active" onclick="filterRules('__ALL__', this)">全て表示</button>{% for g in unique_games %}<button class="filter-btn" onclick="filterRules('{{ g }}', this)">{{ g }}</button>{% endfor %}</div>
             <div class="card-scroll-area">
-                <form action="/save_rules" method="post">{% for rule in config.rules %}<div class="rule-card" data-game="{{ rule.game }}"><div class="rule-header"><div style="display:flex; gap:5px; align-items:center; flex:1;"><span style="font-weight:bold; color:#888; font-size:0.8em;">#{{ loop.index }}</span><input type="text" name="name" value="{{ rule.name }}" placeholder="ルール名" style="font-weight:bold; width:120px; border:none; background:transparent; border-bottom:1px solid #ccc;"><input type="text" name="game" list="existing_games" value="{{ rule.game }}" placeholder="Game" style="width:150px; color:#555;"></div><div style="text-align:right;">{% if rule.is_active %}<span class="status-active">✅ 稼働中</span><span class="timer-info">{{ rule.next_run }}</span>{% else %}<span class="status-sleep">💤 待機中 ({{ rule.reason }})</span>{% endif %}</div></div><div class="rule-body"><input type="text" name="message" value="{{ rule.message }}" placeholder="送信メッセージ" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div><div class="rule-footer"><div style="font-size:0.85em; display:flex; gap:10px; align-items:center; flex-wrap: wrap;"><span>間隔(分): <input type="number" name="interval" value="{{ rule.interval }}" class="input-mini"></span><span>必要数: <input type="number" name="min_comments" value="{{ rule.min_comments }}" class="input-mini">{% if rule.is_active and rule.remaining_comments > 0 %}<span class="remaining-info">あと {{ rule.remaining_comments }}</span>{% endif %}</span></div><div style="display:flex; gap:2px;">{% if not loop.first %}<button type="submit" formaction="/move_rule/{{ loop.index0 }}/up" class="btn btn-move">▲</button>{% endif %}{% if not loop.last %}<button type="submit" formaction="/move_rule/{{ loop.index0 }}/down" class="btn btn-move">▼</button>{% endif %}<button type="submit" formaction="/delete_rule/{{ loop.index0 }}" class="btn btn-danger" style="margin-left:5px;">削除</button></div></div></div>{% endfor %}</form>
+                <form id="saveRulesForm" action="/save_rules" method="post">{% for rule in config.rules %}<div class="rule-card" data-game="{{ rule.game }}"><div class="rule-header"><div style="display:flex; gap:5px; align-items:center; flex:1;"><span style="font-weight:bold; color:#888; font-size:0.8em;">#{{ loop.index }}</span><input type="text" name="name" value="{{ rule.name }}" placeholder="ルール名" style="font-weight:bold; width:120px; border:none; background:transparent; border-bottom:1px solid #ccc;"><input type="text" name="game" list="existing_games" value="{{ rule.game }}" placeholder="Game" style="width:150px; color:#555;"></div><div style="text-align:right;">{% if rule.is_active %}<span class="status-active">✅ 稼働中</span><span class="timer-info">{{ rule.next_run }}</span>{% else %}<span class="status-sleep">💤 待機中 ({{ rule.reason }})</span>{% endif %}</div></div><div class="rule-body"><input type="text" name="message" value="{{ rule.message }}" placeholder="送信メッセージ" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"></div><div class="rule-footer"><div style="font-size:0.85em; display:flex; gap:10px; align-items:center; flex-wrap: wrap;"><span>間隔(分): <input type="number" name="interval" value="{{ rule.interval }}" class="input-mini"></span><span>必要数: <input type="number" name="min_comments" value="{{ rule.min_comments }}" class="input-mini">{% if rule.is_active and rule.remaining_comments > 0 %}<span class="remaining-info">あと {{ rule.remaining_comments }}</span>{% endif %}</span></div><div style="display:flex; gap:2px;">{% if not loop.first %}<button type="submit" formaction="/move_rule/{{ loop.index0 }}/up" class="btn btn-move">▲</button>{% endif %}{% if not loop.last %}<button type="submit" formaction="/move_rule/{{ loop.index0 }}/down" class="btn btn-move">▼</button>{% endif %}<button type="submit" formaction="/delete_rule/{{ loop.index0 }}" class="btn btn-danger" style="margin-left:5px;">削除</button></div></div></div>{% endfor %}</form>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-top:5px; flex-shrink:0;"><button type="submit" form="addRuleForm" formaction="/add_rule" class="btn btn-info">＋ ルール追加</button><button type="submit" form="saveRulesForm" class="btn btn-primary" style="padding:8px 30px;">全ルールを保存</button></div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px; flex-shrink:0;">
+                <button type="button" onclick="toggleModal('addRuleModal')" class="btn btn-info">＋ ルール追加</button>
+                <button type="submit" form="saveRulesForm" class="btn btn-primary" style="padding:8px 30px;">全ルールを保存</button>
+            </div>
             </div>
 
         <div class="card" style="order: {{ config.layout.cards.logs.order }}; grid-column: span {{ config.layout.cards.logs.span }}; {% if config.layout.cards.logs.height > 0 %}height: {{ config.layout.cards.logs.height }}px;{% endif %}">
@@ -519,6 +522,40 @@ HTML_TEMPLATE = """
             <div class="logs card-scroll-area" id="log-container">{% for log in logs %}<div>{{ log }}</div>{% endfor %}</div>
         </div>
     </div>
+    
+<div id="addRuleModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="toggleModal('addRuleModal')">&times;</span>
+        <h2 style="border:none;">＋ 新しいルールを追加</h2>
+        <form action="/add_rule" method="post">
+            <div class="form-group">
+                <label>ルール名</label>
+                <input type="text" name="name" value="ルール #{{ config.rules|length + 1 }}" required>
+            </div>
+            <div class="form-group">
+                <label>ゲーム</label>
+                <input type="text" name="game" list="existing_games" value="All" required>
+            </div>
+            <div class="form-group">
+                <label>メッセージ</label>
+                <textarea name="message" rows="3" required></textarea>
+            </div>
+            <div style="display:flex; gap:15px;">
+                <div class="form-group" style="flex:1;">
+                    <label>間隔 (分)</label>
+                    <input type="number" name="interval" value="15" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>必要コメント数</label>
+                    <input type="number" name="min_comments" value="2" required>
+                </div>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary">追加する</button>
+            </div>
+        </form>
+    </div>
+</div>
     
 <div id="settingsModal" class="modal">
     <div class="modal-content">
