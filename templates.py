@@ -158,7 +158,7 @@ HTML_TEMPLATE = """
                 .catch(e => alert('エラーが発生しました: ' + e));
         }
 
-        window.onclick = function(event) { if (event.target.classList.contains('modal')) { event.target.style.display = "none"; } }
+        
         
         setInterval(function() {
             fetch('/api/status').then(r => r.json()).then(data => {
