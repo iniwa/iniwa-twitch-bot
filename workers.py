@@ -18,8 +18,8 @@ except ImportError:
 
 # --- 定数 ---
 DOWNLOAD_DIR = '/app/downloads'
-ARCHIVE_WAIT_DIR = '/app/downloads/twitch-archive/wait'
-ARCHIVE_ENCODE_DIR = '/app/downloads/twitch-archive/encode'
+ARCHIVE_WAIT_DIR = '/app/downloads/wait'
+ARCHIVE_ENCODE_DIR = '/app/downloads/encode'
 
 # --- グローバル変数 ---
 current_minute_stats = {
