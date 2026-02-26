@@ -2,3 +2,7 @@
 /data/
 /downloads/
 __pycache__
+.serena/
+CLAUDE.md
+CLAUDE_ja.md
+.claude/

@@ -1457,7 +1457,14 @@ ANALYTICS_TEMPLATE = """
                                 </td>
                                 <td>{{ data.avg_viewers }} / {{ data.max_viewers }}</td>
                                 <td id="progress-{{ sid }}" class="nowrap">
-                                    {% if data.vod_status == 'downloaded' %}<span class="status-dl">✅ 保存済</span>
+                                    {% if data.vod_status == 'downloaded' %}
+                                        {% if data.encode_status == 'encoded' %}
+                                            <span class="status-dl" title="エンコード済 ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">✅ エンコード済</span>
+                                        {% elif data.encode_status == 'missing' %}
+                                            <span style="color:#e65100;" title="ファイルが見つかりません">⚠️ ファイル不明</span>
+                                        {% else %}
+                                            <span style="color:#1565c0;" title="エンコード待ち ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">🕐 エンコード待ち</span>
+                                        {% endif %}
                                     {% elif data.vod_status == 'downloading' %}<div class="status-wait">⏳ DL中...</div>
                                     {% elif data.vod_status == 'failed' %}<span class="status-fail">❌ 失敗</span>
                                     {% else %}<span style="color:#aaa;">- 未保存</span>{% endif %}

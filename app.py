@@ -130,6 +130,24 @@ def analytics_list():
                 index_data = json.load(f)
                 for sid, data in index_data.items():
                     data['sid'] = sid
+                    # エンコードステータスの判定
+                    if data.get('vod_status') == 'downloaded' and data.get('file_path'):
+                        fp = data['file_path']
+                        fname = os.path.basename(fp)
+                        encode_path = os.path.join(w.ARCHIVE_ENCODE_DIR, fname)
+                        wait_path = os.path.join(w.ARCHIVE_WAIT_DIR, fname)
+                        if os.path.exists(encode_path):
+                            data['encode_status'] = 'encoded'
+                            data['archive_file_size'] = os.path.getsize(encode_path)
+                        elif os.path.exists(wait_path):
+                            data['encode_status'] = 'waiting'
+                            data['archive_file_size'] = os.path.getsize(wait_path)
+                        elif os.path.exists(fp):
+                            data['encode_status'] = 'waiting'
+                            data['archive_file_size'] = os.path.getsize(fp)
+                        else:
+                            data['encode_status'] = 'missing'
+                            data['archive_file_size'] = 0
                     if data.get('start_time'):
                         try:
                             dt = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))

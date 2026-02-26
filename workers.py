@@ -18,6 +18,8 @@ except ImportError:
 
 # --- 定数 ---
 DOWNLOAD_DIR = '/app/downloads'
+ARCHIVE_WAIT_DIR = '/app/downloads/twitch-archive/wait'
+ARCHIVE_ENCODE_DIR = '/app/downloads/twitch-archive/encode'
 
 # --- グローバル変数 ---
 current_minute_stats = {
@@ -36,6 +38,8 @@ stats_lock = threading.Lock()
 def ensure_directories():
     if not os.path.exists('data/history'): os.makedirs('data/history')
     if not os.path.exists(DOWNLOAD_DIR): os.makedirs(DOWNLOAD_DIR)
+    if not os.path.exists(ARCHIVE_WAIT_DIR): os.makedirs(ARCHIVE_WAIT_DIR)
+    if not os.path.exists(ARCHIVE_ENCODE_DIR): os.makedirs(ARCHIVE_ENCODE_DIR)
 
 def load_stream_index():
     path = 'data/history/stream_index.json'
@@ -81,8 +85,8 @@ def fix_dangling_states():
     with c.file_lock:
         idx = load_stream_index()
         modified = False
-        save_path = DOWNLOAD_DIR
-        
+        save_path = ARCHIVE_WAIT_DIR
+
         for sid, data in idx.items():
             if data.get("vod_status") == "downloading":
                 # ファイル名の構築 (JST変換)
@@ -93,17 +97,17 @@ def fix_dangling_states():
                         dt_obj = datetime.fromisoformat(data["start_time"].replace('Z', '+00:00')).astimezone(c.JST)
                         file_date = dt_obj.strftime('%Y%m%d')
                     except: pass
-                
+
                 raw_title = data.get("title", "Untitled")
                 file_title = re.sub(r'[\\/:*?"<>|]', '_', raw_title)
                 expected_filename = f"{file_date}_{file_title}.mp4"
                 full_path = os.path.join(save_path, expected_filename)
-                
+
                 if os.path.exists(full_path):
                     c.log(f"✅ 復旧: {expected_filename} を確認。ステータスを[保存済]に修正します。")
                     data["vod_status"] = "downloaded"
                     data["file_path"] = full_path
-                    if "vod_id" not in data: data["vod_id"] = sid 
+                    if "vod_id" not in data: data["vod_id"] = sid
                     modified = True
                 else:
                     c.log(f"⚠️ リセット: {sid} の完了ファイルがありません。ステータスを戻し、ゴミを掃除します。")
@@ -481,7 +485,7 @@ def execute_download(conf, stream_id):
         global download_progress
         download_progress[stream_id] = {"percent": 0, "speed": "Init...", "status": "starting"}
 
-        save_path = DOWNLOAD_DIR
+        save_path = ARCHIVE_WAIT_DIR
         if not os.path.exists(save_path): os.makedirs(save_path)
         
         def progress_hook(d):
