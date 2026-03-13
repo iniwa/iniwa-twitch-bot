@@ -1,0 +1,31 @@
+<div class="card" style="order: {{ config.layout.cards.viewers.order }}; grid-column: span {{ config.layout.cards.viewers.span }}; {% if config.layout.cards.viewers.height > 0 %}height: {{ config.layout.cards.viewers.height }}px;{% endif %}">
+    <h2><div>📊 視聴者リスト <span id="viewer-count-span" style="font-size:0.8em; color:#666;">({{ active_viewers|length }}人)</span></div>
+        <div style="display:flex; gap:5px;"><a href="/analytics" class="btn btn-analytics">📈 アナリティクス</a><button class="btn btn-purple" onclick="toggleModal('followerModal')">👥 フォロワー</button><button class="btn btn-info" onclick="toggleModal('historyModal')">📜 履歴</button></div></h2>
+
+    <div class="card-scroll-area">
+        <table>
+            <thead><tr><th>名前</th><th>フォロー</th><th>滞在</th><th>回数</th><th>メモ</th><th style="width:80px;">Action</th></tr></thead>
+            <tbody id="viewer-tbody">
+                {% for viewer in active_viewers %}
+                <tr>
+                    <td><b>{{ viewer.name }}</b></td>
+                    <td>{{ viewer.follow_status|safe }}</td>
+                    <td>{{ viewer.duration }}</td>
+                    <td>{{ viewer.total }}回</td>
+                    <td>
+                        <div class="memo-text">{{ viewer.memo }}</div>
+                        <button class="btn-memo" onclick="openMemoModal('{{ viewer.uid }}', '{{ viewer.name }}', '{{ viewer.memo|replace("'", "\\'") }}')">📝</button>
+                    </td>
+                    <td style="text-align:right; vertical-align:bottom;">
+                        <button class="btn-so" onclick="shoutout('{{ viewer.login }}', '{{ viewer.name }}')">📣 SO</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center; color:#999;">現在なし / オフライン</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <form action="/shoutout" method="post" class="so-form"><input type="text" name="target_name" placeholder="英語IDを入力 (例: iniwa)" required style="flex:1; padding:6px; border:1px solid #ddd; border-radius:4px;"><button class="btn btn-apply" style="padding:6px 15px; font-size:0.8em;">📣 紹介</button></form>
+</div>

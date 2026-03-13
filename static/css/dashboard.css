@@ -1,0 +1,39 @@
+/* Dashboard layout */
+.dashboard-grid {
+    display: grid;
+    gap: 20px;
+    margin: 20px auto;
+    padding: 0 20px;
+    align-items: stretch;
+}
+
+/* Control groups */
+form, .control-group, .rule-footer, .filter-bar { flex-shrink: 0; }
+
+/* Logs */
+.logs { background: #1e1e1e; color: #00ff00; padding: 10px; font-family: monospace; font-size: 0.8em; border-radius: 6px; }
+
+/* Rule cards */
+.rule-card { background: #fafbfc; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+.rule-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.rule-body { margin-bottom: 8px; }
+.rule-footer { display: flex; justify-content: space-between; align-items: center; }
+.input-mini { width: 60px; padding: 4px; }
+.status-active { color: #2e7d32; font-weight: bold; font-size: 0.85em; }
+.status-sleep { color: #888; font-size: 0.85em; }
+.timer-info { font-size: 0.8em; color: #6441a5; margin-left: 5px; }
+.remaining-info { font-size: 0.8em; color: #e91e63; margin-left: 3px; }
+
+/* Filter bar */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+.filter-btn { padding: 5px 12px; border: 1px solid #ddd; background: #fff; border-radius: 15px; cursor: pointer; font-size: 0.85em; color: #555; transition: 0.2s; }
+.filter-btn:hover { background: #f0f0f0; }
+.filter-btn.active { background: #6441a5; color: white; border-color: #6441a5; }
+
+/* Layout table */
+.layout-table { width: 100%; font-size: 0.9em; margin-top: 10px; }
+.layout-table th, .layout-table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+.layout-table input { width: 80px; padding: 4px; }
+
+/* Shoutout form */
+.so-form { display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0; }

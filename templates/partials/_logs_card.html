@@ -1,0 +1,17 @@
+<div class="card" style="order: {{ config.layout.cards.logs.order }}; grid-column: span {{ config.layout.cards.logs.span }}; {% if config.layout.cards.logs.height > 0 %}height: {{ config.layout.cards.logs.height }}px;{% endif %}">
+    <h2>
+        <div style="display:flex; align-items:center; gap:10px;">📜 ログ
+            <span class="status-badge {{ 'running' if config.is_running else 'stopped' }}">{{ "🟢 稼働中" if config.is_running else "🔴 停止中" }}</span>
+        </div>
+        <div class="control-group">
+            <form action="/toggle" method="post" style="display:inline;">
+                <button class="btn {{ 'btn-stop' if config.is_running else 'btn-success' }}" style="padding:4px 10px; font-size:0.85em;">{{ '停止' if config.is_running else '起動' }}</button>
+            </form>
+            <form action="/test_message" method="post" style="display:inline;">
+                <button class="btn btn-apply" style="padding:4px 10px; font-size:0.85em;">🔔 テスト</button>
+            </form>
+            <button class="btn btn-secondary" onclick="toggleModal('settingsModal')" style="padding:4px 10px; font-size:0.85em;">⚙️ 設定</button>
+        </div>
+    </h2>
+    <div class="logs card-scroll-area" id="log-container">{% for log in logs %}<div>{{ log }}</div>{% endfor %}</div>
+</div>

@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Twitch Bot{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="tab-menu">
+            <button id="btn-list" class="tab-btn active" onclick="switchTab('list')">📄 一覧</button>
+            <button id="btn-calendar" class="tab-btn" onclick="switchTab('calendar')">📅 カレンダー</button>
+            <button id="btn-trends" class="tab-btn" onclick="switchTab('trends')">📊 推移・分析</button>
+        </div>
+
+        <div id="list" class="tab-content active">
+            <div class="card">
+                <h2><div>📺 過去の配信一覧</div>
+                    <div style="display:flex; gap:10px;">
+                        <form action="/force_sync_history" method="post" onsubmit="return confirm('Twitch APIから最新情報を取得し、タイトルや時間を更新します。\n(ゲーム名は現在の設定を維持します)\nよろしいですか？');">
+                            <button class="btn btn-primary" style="font-size:0.8em; background-color: #007bff; border-color: #007bff; opacity: 1;">🔄 情報更新 (API)</button>
+                        </form>
+                        <form action="/download_all_vods" method="post" onsubmit="return confirm('未保存のアーカイブを全てダウンロードしますか？時間がかかります。');">
+                            <button class="btn btn-bulk">📥 一括ダウンロード (未保存のみ)</button>
+                        </form>
+                    </div>
+                </h2>
+
+                <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="タイトルやゲーム名で検索..." class="search-box">
+
+                {% if index_data %}
+                <div style="overflow-x:auto;">
+                <table id="streamTable">
+                    <thead>
+                        <tr>
+                            <th class="col-date" onclick="sortStreamTable(0)">日時</th>
+                            <th class="col-title" onclick="sortStreamTable(1)">タイトル</th>
+                            <th class="col-game" onclick="sortStreamTable(2)">ゲーム</th>
+                            <th class="col-duration" onclick="sortStreamTable(3)">時間</th>
+                            <th class="col-source" onclick="sortStreamTable(4)">ソース</th>
+                            <th class="col-viewers" onclick="sortStreamTable(5)">同接<br><span style="font-size:0.8em; font-weight:normal;">(平均/最大)</span></th>
+                            <th class="col-archive" onclick="sortStreamTable(6)">アーカイブ</th>
+                            <th class="col-action">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in sorted_list %}
+                        {% set sid = data.sid %}
+                        <tr>
+                            <td onclick="window.location.href='/analytics/stream/{{ sid }}'" style="cursor:pointer;">
+                                <div class="date-main">{{ data.start_time[:10] }}</div>
+                                <div class="date-sub">{{ data.start_time[11:16] }}</div>
+                            </td>
+                            <td onclick="window.location.href='/analytics/stream/{{ sid }}'" style="cursor:pointer;">{{ data.title }}</td>
+                            <td>{{ data.game_name }}</td>
+                            <td>{{ data.duration_short }}</td>
+                            <td class="nowrap">
+                                {% if data.source == 'api' %}<span class="source-api">API取得</span>
+                                {% else %}<span class="source-bot">Bot記録</span>{% endif %}
+                            </td>
+                            <td>{{ data.avg_viewers }} / {{ data.max_viewers }}</td>
+                            <td id="progress-{{ sid }}" class="nowrap">
+                                {% if data.vod_status == 'downloaded' %}
+                                    {% if data.encode_status == 'encoded' %}
+                                        <span class="status-dl" title="エンコード済 ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">✅ エンコード済</span>
+                                    {% elif data.encode_status == 'missing' %}
+                                        <span style="color:#e65100;" title="ファイルが見つかりません">⚠️ ファイル不明</span>
+                                    {% else %}
+                                        <span style="color:#1565c0;" title="エンコード待ち ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">🕐 エンコード待ち</span>
+                                    {% endif %}
+                                {% elif data.vod_status == 'downloading' %}<div class="status-wait">⏳ DL中...</div>
+                                {% elif data.vod_status == 'failed' %}<span class="status-fail">❌ 失敗</span>
+                                {% else %}<span style="color:#aaa;">- 未保存</span>{% endif %}
+                            </td>
+                            <td class="nowrap">
+                                <button class="btn btn-edit" onclick="openEditStreamModal('{{ sid }}', '{{ data.title|replace("'", "\\'")|replace('"', '&quot;') }}', '{{ data.game_name|replace("'", "\\'")|replace('"', '&quot;') }}')">✏️</button>
+
+                                {% if data.vod_status == 'downloading' %}
+                                    <form action="/cancel_download/{{ sid }}" method="post" style="display:inline;">
+                                        <button class="btn btn-stop" onclick="return confirm('ダウンロードを中止しますか？')">🛑</button>
+                                    </form>
+                                {% elif data.vod_status == 'downloaded' %}
+                                    <form action="/delete_vod/{{ sid }}" method="post" style="display:inline;">
+                                        <button class="btn btn-del" onclick="return confirm('ファイルを削除し、ステータスをリセットします。再DL可能になりますがよろしいですか？')">🗑️</button>
+                                    </form>
+                                {% else %}
+                                    <form action="/download_vod/{{ sid }}" method="post" style="display:inline;">
+                                        <button class="btn btn-dl">📥</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                {% else %}<div style="text-align:center; padding:20px; color:#888;">まだ記録された配信データがありません</div>{% endif %}
+            </div>
+        </div>
+
+        <div id="calendar" class="tab-content">
+            <div class="analytics-grid">
+                <div class="card">
+                    <div class="calendar-header">
+                        <button class="btn btn-secondary" style="font-weight:bold; color:white;" onclick="changeMonth(-1)">◀ 前月</button>
+                        <h2 id="calendarTitle" style="border:none; margin:0;">2026年 1月</h2>
+                        <button class="btn btn-secondary" style="font-weight:bold; color:white;" onclick="changeMonth(1)">翌月 ▶</button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <div id="calendarGrid" class="calendar-grid"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:5px;">📅 今月の配信リスト</h3>
+                    <div style="overflow-y:auto; max-height:400px;">
+                        <table>
+                            <thead><tr><th>日時</th><th>タイトル</th><th>ゲーム</th><th>時間</th></tr></thead>
+                            <tbody id="monthly-list-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 30px 0; border:0; border-top:1px dashed #ccc;">
+
+            <div class="analytics-grid">
+                <div class="card">
+                    <h2 style="border:none; margin:0; padding-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <span>⏱️ 配信タイムライン (週間)</span>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <button class="btn btn-secondary" onclick="moveTimeline(-7)">◀</button>
+                            <input type="date" id="timelinePicker" class="date-input" onchange="changeTimelineDate(this.value)">
+                            <button class="btn btn-secondary" onclick="moveTimeline(0)">今週</button>
+                            <button class="btn btn-secondary" onclick="moveTimeline(7)">▶</button>
+                        </div>
+                    </h2>
+                    <div style="height: 300px;">
+                        <canvas id="weeklyTimelineCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:5px;">📑 週間の配信リスト</h3>
+                    <div style="overflow-y:auto; max-height:300px;">
+                        <table>
+                            <thead><tr><th>日時</th><th>タイトル</th><th>ゲーム</th><th>時間</th></tr></thead>
+                            <tbody id="weekly-list-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="trends" class="tab-content">
+            <div class="card">
+                <h2>📊 配信メトリクス推移</h2>
+                <div class="chart-controls">
+                    <button class="range-btn" id="btn-range-1W" onclick="setRange('1W')">最近1週間</button>
+                    <button class="range-btn" id="btn-range-1M" onclick="setRange('1M')">最近1ヶ月</button>
+                    <button class="range-btn" id="btn-range-1Y" onclick="setRange('1Y')">最近1年</button>
+                    <button class="range-btn" id="btn-range-ALL" onclick="setRange('ALL')">全期間</button>
+                    <span style="margin:0 10px; color:#ccc;">|</span>
+                    <input type="date" id="start-date" class="date-input" onchange="setRange('CUSTOM')">
+                    <span style="font-weight:bold;">~</span>
+                    <input type="date" id="end-date" class="date-input" onchange="setRange('CUSTOM')">
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChartCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="card">
+                    <h2>📈 期間内サマリー <span style="font-size:0.6em; color:#888; font-weight:normal;">※Bot計測分のみ</span></h2>
+                    <div class="stat-grid">
+                        <div class="stat-box"><div class="stat-val" id="stat-avg-viewers">-</div><div class="stat-label">平均同接</div></div>
+                        <div class="stat-box"><div class="stat-val" id="stat-total-time">-</div><div class="stat-label">総配信時間</div></div>
+                        <div class="stat-box"><div class="stat-val" id="stat-stream-count">-</div><div class="stat-label">配信回数</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>🎮 ゲーム別集計</h2>
+                    <div style="overflow-y:auto; max-height:200px;">
+                        <table>
+                            <thead><tr><th>ゲーム</th><th>平均同接</th><th>合計時間</th><th>回数</th></tr></thead>
+                            <tbody id="gamestats-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📑 表示範囲内の配信一覧</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-date">日時</th>
+                            <th class="col-title">タイトル</th>
+                            <th class="col-game">ゲーム</th>
+                            <th class="col-viewers">最大同接 / 平均</th>
+                            <th>フォロワー</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trend-list-tbody"></tbody>
+                </table>
+                <div class="pagination">
+                    <button class="btn btn-secondary" onclick="changePage(-1)">◀ 前へ</button>
+                    <span id="page-info" class="page-info"></span>
+                    <button class="btn btn-secondary" onclick="changePage(1)">次へ ▶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editStreamModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditStreamModal()">&times;</span>
+            <h2 style="border:none;">✏️ 配信情報の編集</h2>
+            <form action="/update_stream_info" method="post">
+                <input type="hidden" id="edit_stream_id" name="stream_id">
+                <div class="form-group">
+                    <label>配信タイトル</label>
+                    <input type="text" id="edit_stream_title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>ゲームカテゴリー</label>
+                    <input type="text" id="edit_stream_game" name="game" required>
+                </div>
+                <div style="margin-top:20px; text-align:right;">
+                    <button class="btn btn-primary">保存する</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const allStreams = {{ all_streams_json | safe }};
+    const followerHistory = {{ follower_history_json | safe }};
+</script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

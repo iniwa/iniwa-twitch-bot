@@ -1,0 +1,32 @@
+<div id="followerModal" class="modal">
+    <div class="modal-content" style="max-width:800px; height:90vh; display:flex; flex-direction:column;">
+        <div style="flex-shrink:0;">
+            <span class="close" onclick="toggleModal('followerModal')">&times;</span>
+            <h2 style="border:none; margin:0; padding-bottom:10px;">👥 フォロワーリスト</h2>
+        </div>
+        <div style="flex:1; overflow-y:auto; min-height:0;">
+            <table class="history-table" id="followerTable">
+                <thead><tr>
+                    <th onclick="sortTable('followerTable', 0)">名前 (ID)</th>
+                    <th onclick="sortTable('followerTable', 1)">状態</th>
+                    <th onclick="sortTable('followerTable', 2)">フォロー開始</th>
+                    <th onclick="sortTable('followerTable', 3)">フォロー解除</th>
+                </tr></thead>
+                <tbody>
+                    {% for uid, follower in history.items() %}
+                    {% if follower.is_follower or follower.unfollowed_at %}
+                    <tr>
+                        <td><b>{{ follower.name }}</b><br><span style="font-size:0.8em; color:#888;">({{ follower.login }})</span></td>
+                        <td data-sort="{{ 1 if follower.is_follower else 0 }}">
+                            {% if follower.is_follower %}<span class="follow-status">✅ フォロー中</span>{% else %}<span class="unfollow-status">💔 解除済み</span>{% endif %}
+                        </td>
+                        <td data-sort="{{ follower.followed_at|replace('-','') if follower.followed_at else 0 }}">{{ follower.followed_at }}</td>
+                        <td data-sort="{{ follower.unfollowed_at|replace('-','') if follower.unfollowed_at else 0 }}">{{ follower.unfollowed_at }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

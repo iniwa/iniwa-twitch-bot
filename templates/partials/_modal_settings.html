@@ -1,0 +1,78 @@
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="toggleModal('settingsModal')">&times;</span>
+        <h2 style="border:none;">⚙️ Bot基本設定</h2>
+        <form action="/save_config" method="post">
+            <div class="form-group"><label>Client ID</label><input type="text" name="client_id" value="{{ config.client_id }}"></div>
+            <div class="form-group"><label>Bot Access Token</label><input type="password" name="access_token" value="{{ config.access_token }}"></div>
+            <div class="form-group"><label>Broadcaster Token</label><input type="password" name="broadcaster_token" value="{{ config.get('broadcaster_token', '') }}"></div>
+            <div class="form-group"><label>Broadcaster ID</label><input type="text" name="broadcaster_id" value="{{ config.broadcaster_id }}"></div>
+            <div class="form-group"><label>Bot User ID</label><input type="text" name="bot_user_id" value="{{ config.bot_user_id }}"></div>
+            <div class="form-group"><label>Channel Name</label><input type="text" name="channel_name" value="{{ config.channel_name }}"></div>
+            <div style="margin-top:20px; padding:10px; background:#f9f9f9; border-radius:5px;">
+                <label style="display:inline-block; margin-right:15px; margin-bottom:5px;"><input type="checkbox" name="debug_mode" {% if config.debug_mode %}checked{% endif %}> デバッグモード</label><br>
+                <label style="display:inline-block; margin-right:15px; margin-bottom:5px;"><input type="checkbox" name="ignore_stream_status" {% if config.ignore_stream_status %}checked{% endif %}> 配信外でもBotを稼働する</label><br>
+                <label style="display:inline-block; margin-top:5px; font-weight:bold; color:#e91e63;"><input type="checkbox" name="enable_welcome" {% if config.enable_welcome %}checked{% endif %}> ✨ 初コメント時に「ようこそ！」と挨拶する</label><br>
+                <label style="display:inline-block; margin-top:5px; font-weight:bold; color:#6441a5;"><input type="checkbox" name="hide_self_bot" {% if config.get('hide_self_bot') %}checked{% endif %}> 👻 配信者本人とBotをリストから隠す</label>
+                <div style="margin-top:10px; padding:10px; background:#e8f5e9; border:1px solid #c8e6c9; border-radius:4px;">
+                    <label style="display:inline-block; font-weight:bold; color:#2e7d32;"><input type="checkbox" name="enable_vod_download" {% if config.get('enable_vod_download') %}checked{% endif %}> 🎥 配信終了後にアーカイブを自動ダウンロード</label>
+                    <div style="margin-top:5px; font-size:0.85em; color:#555;">保存先: <span style="font-family:monospace;">/app/downloads</span> (固定)</div>
+                </div>
+                <div style="margin-top:10px;">
+                    <label style="color:#555;">🚫 非表示ユーザーリスト</label>
+                    <textarea name="ignored_users_list" rows="3">{{ config.get('ignored_users', []) | join('\n') }}</textarea>
+                </div>
+            </div>
+            <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #ddd;">
+                <label style="color:#333; font-weight:bold;">🎨 レイアウト設定</label>
+                <div style="display:flex; gap:10px; margin-bottom:10px; margin-top:5px;">
+                    <div style="flex:1;">全体マス数: <input type="number" name="layout_columns" value="{{ config.layout.columns }}" min="1" max="6" style="width:60px; padding:4px;"></div>
+                    <div style="flex:1;">全体最大幅(px): <input type="number" name="layout_max_width" value="{{ config.layout.max_width }}" style="width:80px; padding:4px;"></div>
+                </div>
+                <table class="layout-table">
+                    <thead><tr><th>パネル名</th><th>順番</th><th>横幅(マス)</th><th>縦幅(px)<br><span style="font-size:0.8em; font-weight:normal;">(0=自動)</span></th></tr></thead>
+                    <tbody>
+                        <tr><td>視聴者リスト</td>
+                            <td><input type="number" name="layout_viewers_order" value="{{ config.layout.cards.viewers.order }}"></td>
+                            <td><input type="number" name="layout_viewers_span" value="{{ config.layout.cards.viewers.span }}" min="1"></td>
+                            <td><input type="number" name="layout_viewers_height" value="{{ config.layout.cards.viewers.height }}" min="0"></td>
+                        </tr>
+                        <tr><td>プリセット</td>
+                            <td><input type="number" name="layout_presets_order" value="{{ config.layout.cards.presets.order }}"></td>
+                            <td><input type="number" name="layout_presets_span" value="{{ config.layout.cards.presets.span }}" min="1"></td>
+                            <td><input type="number" name="layout_presets_height" value="{{ config.layout.cards.presets.height }}" min="0"></td>
+                        </tr>
+                        <tr><td>予想 (賭博)</td>
+                            <td><input type="number" name="layout_prediction_order" value="{{ config.layout.cards.prediction.order }}"></td>
+                            <td><input type="number" name="layout_prediction_span" value="{{ config.layout.cards.prediction.span }}" min="1"></td>
+                            <td><input type="number" name="layout_prediction_height" value="{{ config.layout.cards.prediction.height }}" min="0"></td>
+                        </tr>
+                        <tr><td>ルール</td>
+                            <td><input type="number" name="layout_rules_order" value="{{ config.layout.cards.rules.order }}"></td>
+                            <td><input type="number" name="layout_rules_span" value="{{ config.layout.cards.rules.span }}" min="1"></td>
+                            <td><input type="number" name="layout_rules_height" value="{{ config.layout.cards.rules.height }}" min="0"></td>
+                        </tr>
+                        <tr><td>ログ</td>
+                            <td><input type="number" name="layout_logs_order" value="{{ config.layout.cards.logs.order }}"></td>
+                            <td><input type="number" name="layout_logs_span" value="{{ config.layout.cards.logs.span }}" min="1"></td>
+                            <td><input type="number" name="layout_logs_height" value="{{ config.layout.cards.logs.height }}" min="0"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:20px; text-align:right;"><button class="btn btn-primary">保存して閉じる</button></div>
+        </form>
+        <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #ddd;">
+            <label style="color:#555; font-weight:bold;">🛠️ デバッグアクション</label>
+            <div style="margin-top:5px; display:flex; gap:5px; flex-wrap:wrap;">
+                <form action="/debug_update_followers" method="post" onsubmit="return confirm('API実行しますか？');" style="flex:1;">
+                    <button class="btn btn-info" style="width:100%;">🔄 フォロワー更新</button>
+                </form>
+                <a href="/debug_check" target="_blank" class="btn btn-secondary" style="flex:1; text-align:center; padding-top:8px;">🏥 データ取得診断</a>
+                <form action="/delete_debug_history" method="post" onsubmit="return confirm('デバッグ履歴（ログ・統計・録画）を完全に削除しますか？\nこの操作は取り消せません。');" style="flex:1;">
+                    <button class="btn btn-danger" style="width:100%;">🗑️ デバッグ履歴削除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

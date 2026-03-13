@@ -1,0 +1,15 @@
+<div id="editPresetModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="toggleModal('editPresetModal')">&times;</span>
+        <h2 style="border:none;">📝 プリセット編集</h2>
+        <form action="/update_preset" method="post">
+            <input type="hidden" id="edit_preset_index" name="preset_index">
+            <div class="form-group"><label>プリセット名</label><input type="text" id="edit_preset_name" name="name" required></div>
+            <div class="form-group"><label>ゲームカテゴリー</label><input type="text" id="edit_preset_game" name="game" list="existing_games" required></div>
+            <div class="form-group"><label>タグ (カンマ区切り)</label><input type="text" id="edit_preset_tags" name="tags" placeholder="FPS, 参加型, 初心者歓迎"></div>
+            <div class="form-group"><label>ツイート用タグ</label><input type="text" id="edit_preset_tweet_tags" name="tweet_tags" placeholder="#Twitch #配信 #FPS"></div>
+            <div class="form-group"><label>配信タイトル</label><input type="text" id="edit_preset_title" name="title" required></div>
+            <div style="margin-top:20px; text-align:right;"><button class="btn btn-primary">変更を保存</button></div>
+        </form>
+    </div>
+</div>

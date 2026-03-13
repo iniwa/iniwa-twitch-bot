@@ -1,0 +1,49 @@
+<div id="historyModal" class="modal">
+    <div class="modal-content" style="max-width:1000px; height:90vh; display:flex; flex-direction:column;">
+        <div style="flex-shrink:0;">
+            <span class="close" onclick="toggleModal('historyModal')">&times;</span>
+            <h2 style="border:none; margin:0; padding-bottom:10px;">📜 視聴者履歴 (全期間)</h2>
+        </div>
+        <div style="flex:1; overflow-y:auto; min-height:0;">
+            <table class="history-table" id="historyTable">
+                <thead><tr>
+                    <th onclick="sortTable('historyTable', 0)">名前 (ID)</th>
+                    <th onclick="sortTable('historyTable', 1)">フォロー</th>
+                    <th onclick="sortTable('historyTable', 2)">来場回数</th>
+                    <th onclick="sortTable('historyTable', 3)">累計滞在</th>
+                    <th onclick="sortTable('historyTable', 4)">コメント</th>
+                    <th onclick="sortTable('historyTable', 5)">ビッツ</th>
+                    <th onclick="sortTable('historyTable', 6)">サブスク</th>
+                    <th onclick="sortTable('historyTable', 7)">連続</th>
+                    <th onclick="sortTable('historyTable', 8)">メモ</th>
+                    <th onclick="sortTable('historyTable', 9)">最終退出</th>
+                </tr></thead>
+                <tbody id="history-tbody">
+                    {% for uid, hist in history.items() %}
+                    <tr>
+                        <td>{{ hist.name }} <br><span style="font-size:0.8em; color:#888;">({{ hist.login if hist.login else "-" }})</span></td>
+                        <td data-sort="{{ hist.followed_at|replace('-','') if hist.is_follower and hist.followed_at else 0 }}">
+                            {% if hist.is_follower %}<div class="follow-status">✅</div><div style="font-size:0.75em; color:#888;">{{ hist.followed_at }}~</div>{% else %}-{% endif %}
+                        </td>
+                        <td data-sort="{{ hist.total_visits }}">{{ hist.total_visits }}回</td>
+                        <td data-sort="{{ hist.total_duration if hist.total_duration else 0 }}">{{ hist.total_duration | duration_format }}</td>
+                        <td data-sort="{{ hist.total_comments if hist.total_comments else 0 }}">{{ hist.total_comments if hist.total_comments else 0 }}回</td>
+                        <td data-sort="{{ hist.total_bits if hist.total_bits else 0 }}" class="{{ 'bits-count' if hist.total_bits else '' }}">{{ hist.total_bits if hist.total_bits else 0 }}</td>
+                        <td data-sort="{{ 1 if hist.is_sub else 0 }}" class="{{ 'sub-active' if hist.is_sub else '' }}">{{ "⭐" if hist.is_sub else "-" }}</td>
+                        <td data-sort="{{ hist.get('streak', 0) }}">
+                            {% if hist.get('streak', 0) > 1 %}🔥{{ hist.get('streak', 0) }}{% else %}-{% endif %}
+                        </td>
+                        <td>
+                            <div class="memo-text">{{ hist.memo if hist.memo else "" }}</div>
+                            <button class="btn-memo" onclick="openMemoModal('{{ uid }}', '{{ hist.name|replace("'", "\\'")|replace('"', '&quot;') }}', '{{ (hist.memo if hist.memo else "")|replace("'", "\\'")|replace('"', '&quot;') }}')">📝</button>
+                        </td>
+                        <td data-sort="{{ 9999999999 if uid in active_uids else (hist.last_seen_ts if hist.last_seen_ts else 0) }}">
+                            {% if uid in active_uids %}<span class="watching-status">視聴中</span>{% else %}{{ hist.last_seen_ts | timestamp_to_date }}{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,75 @@
+/* Analytics layout */
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+
+/* Tab navigation */
+.tab-menu { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+.tab-btn { padding: 10px 20px; border: none; background: #eee; cursor: pointer; border-radius: 5px; font-weight: bold; color: #555; }
+.tab-btn.active { background: #6441a5; color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Chart controls */
+.chart-controls { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; background: #f8f9fa; padding: 10px; border-radius: 8px; }
+.range-btn { padding: 5px 12px; border: 1px solid #ccc; background: white; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+.range-btn.active { background: #6441a5; color: white; border-color: #6441a5; }
+.date-input { padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+
+/* Search box */
+.search-box { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; box-sizing: border-box; }
+
+/* Calendar */
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; min-width: 800px; }
+.cal-day-header { text-align: center; font-weight: bold; color: #666; padding: 5px; }
+.cal-day { background: #fff; border: 1px solid #eee; min-height: 80px; padding: 5px; position: relative; border-radius: 4px; }
+.cal-day:hover { background: #fafafa; }
+.cal-date-num { font-size: 0.9em; font-weight: bold; color: #333; margin-bottom: 5px; }
+.cal-event { background: #e3f2fd; color: #1565c0; font-size: 0.75em; padding: 2px 4px; border-radius: 3px; margin-bottom: 2px; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cal-event:hover { background: #bbdefb; }
+.other-month { background: #f9f9f9; color: #ccc; }
+
+/* Column widths */
+.col-date { width: 110px; }
+.col-title { width: auto; }
+.col-game { width: 120px; }
+.col-duration { width: 80px; }
+.col-source { width: 80px; }
+.col-viewers { width: 90px; }
+.col-archive { width: 120px; }
+.col-action { width: 100px; }
+
+/* Stats */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+.stat-box { background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eee; }
+.stat-val { font-size: 1.5em; font-weight: bold; color: #6441a5; }
+.stat-label { font-size: 0.85em; color: #666; margin-top: 5px; }
+.chart-container { position: relative; height: 350px; width: 100%; }
+
+/* Chat log */
+.chat-log { height: 350px; overflow-y: scroll; background: #fafafa; border: 1px solid #eee; padding: 10px; font-family: monospace; font-size: 0.9em; }
+.chat-line { margin-bottom: 4px; border-bottom: 1px dashed #eee; padding-bottom: 2px; }
+.ts { color: #888; font-size: 0.8em; margin-right: 5px; }
+.usr { font-weight: bold; color: #007bff; }
+.sub { color: #e91e63; font-weight: bold; }
+.pt { color: #009688; font-weight: bold; }
+
+/* Status indicators */
+.status-dl { color: green; font-weight: bold; }
+.status-wait { color: #f57c00; font-weight: bold; }
+.status-fail { color: red; }
+.source-bot { background: #e8f5e9; color: #2e7d32; padding: 2px 4px; border-radius: 4px; font-size: 0.75em; border: 1px solid #c8e6c9; display: inline-block; text-align: center; min-width: 50px; }
+.source-api { background: #e3f2fd; color: #1565c0; padding: 2px 4px; border-radius: 4px; font-size: 0.75em; border: 1px solid #bbdefb; display: inline-block; text-align: center; min-width: 50px; }
+.nowrap { white-space: nowrap; }
+.date-main { font-weight: bold; font-size: 0.9em; }
+.date-sub { font-size: 0.8em; color: #888; }
+
+/* Pagination */
+.pagination { display: flex; justify-content: center; gap: 10px; margin-top: 15px; align-items: center; }
+.page-info { font-size: 0.9em; color: #666; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+    .calendar-grid { overflow-x: auto; }
+}

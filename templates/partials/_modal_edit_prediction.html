@@ -1,0 +1,25 @@
+<div id="editPredictionModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="toggleModal('editPredictionModal')">&times;</span>
+        <h2 style="border:none;">🎰 予想プリセットの編集</h2>
+        <form action="/update_prediction_preset" method="post">
+            <input type="hidden" id="edit_pred_index" name="preset_index">
+            <div class="form-group">
+                <label>タイトル</label>
+                <input type="text" id="edit_pred_title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label>選択肢 (最大10個)</label>
+                <div id="edit_pred_outcomes_container"></div>
+                <button type="button" class="btn btn-secondary" style="font-size:0.8em; margin-top:5px;" onclick="addOutcomeInput('edit_pred_outcomes_container')">＋ 選択肢を追加</button>
+            </div>
+            <div class="form-group">
+                <label>受付時間 (秒)</label>
+                <input type="number" id="edit_pred_duration" name="duration" required>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary">変更を保存</button>
+            </div>
+        </form>
+    </div>
+</div>

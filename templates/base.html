@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}Iniwa's Twitch BOT{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">Iniwa's Twitch BOT</div>
+        <div class="navbar-links">
+            <a href="/" class="navbar-link {% if request.path == '/' %}active{% endif %}">📊 ダッシュボード</a>
+            <a href="/analytics" class="navbar-link {% if '/analytics' in request.path %}active{% endif %}">📈 アナリティクス</a>
+        </div>
+    </nav>
+
+    <div id="toast-container"></div>
+
+    {% block content %}{% endblock %}
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

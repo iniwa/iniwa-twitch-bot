@@ -1,0 +1,33 @@
+<div id="addRuleModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="toggleModal('addRuleModal')">&times;</span>
+        <h2 style="border:none;">＋ 新しいルールを追加</h2>
+        <form action="/add_rule" method="post">
+            <div class="form-group">
+                <label>ルール名</label>
+                <input type="text" name="name" value="ルール #{{ config.rules|length + 1 }}" required>
+            </div>
+            <div class="form-group">
+                <label>ゲーム</label>
+                <input type="text" name="game" list="existing_games" value="All" required>
+            </div>
+            <div class="form-group">
+                <label>メッセージ</label>
+                <textarea name="message" rows="3" required></textarea>
+            </div>
+            <div style="display:flex; gap:15px;">
+                <div class="form-group" style="flex:1;">
+                    <label>間隔 (分)</label>
+                    <input type="number" name="interval" value="15" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>必要コメント数</label>
+                    <input type="number" name="min_comments" value="2" required>
+                </div>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn btn-primary">追加する</button>
+            </div>
+        </form>
+    </div>
+</div>
