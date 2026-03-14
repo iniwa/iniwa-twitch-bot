@@ -113,9 +113,8 @@ function pollStatus() {
                         '<td>' + v.follow_status + '</td>' +
                         '<td>' + v.duration + '</td>' +
                         '<td>' + v.total + '\u56DE</td>' +
-                        '<td><div class="memo-text">' + v.memo + '</div>' +
-                        '<button class="btn-memo" onclick="openMemoModal(\'' + v.uid + '\', \'' + v.name + '\', \'' + v.memo.replace(/'/g, "\\'") + '\')">\uD83D\uDCDD</button></td>' +
-                        '<td style="text-align:right;"><button class="btn-so" onclick="shoutout(\'' + v.login + '\', \'' + v.name + '\')">\uD83D\uDCE3 SO</button></td>' +
+                        '<td><button class="btn-memo" title="' + v.memo.replace(/"/g, '&quot;') + '" onclick="openMemoModal(\'' + v.uid + '\', \'' + v.name + '\', \'' + v.memo.replace(/'/g, "\\'") + '\')">\uD83D\uDCDD</button></td>' +
+                        '<td><button class="btn-so" onclick="shoutout(\'' + v.login + '\', \'' + v.name + '\')">SO</button></td>' +
                         '</tr>';
                 }).join('');
             }

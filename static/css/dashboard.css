@@ -295,6 +295,32 @@ body.layout-m .card[data-card="logs"] {
   border: 1px solid var(--border);
 }
 
+/* ---- Viewer card header buttons ---- */
+.viewer-action-btns {
+  display: flex;
+  gap: 4px;
+}
+.viewer-action-btns .btn {
+  flex: 1;
+  text-align: center;
+  font-size: 0.78em;
+  padding: 5px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Viewer table (compact for narrow panel) ---- */
+.viewer-table th,
+.viewer-table td {
+  padding: 5px 4px;
+  font-size: 0.82em;
+  white-space: nowrap;
+}
+.viewer-table th { font-size: 0.78em; }
+/* Name column can shrink */
+.viewer-table td:first-child b { display: block; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ---- Shoutout form ---- */
 .so-form { display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0; }
 

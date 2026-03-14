@@ -1,7 +1,7 @@
 <div class="card" data-card="viewers">
-    <h2>
+    <h2 style="flex-direction:column; align-items:stretch; gap:6px;">
         <div>📊 視聴者リスト <span id="viewer-count-span" style="font-size:0.8em; color:var(--text-secondary);">({{ active_viewers|length }}人)</span></div>
-        <div style="display:flex; gap:5px;">
+        <div class="viewer-action-btns">
             <a href="/analytics" class="btn btn-analytics">📈 アナリティクス</a>
             <button class="btn btn-purple" onclick="toggleModal('followerModal')">👥 フォロワー</button>
             <button class="btn btn-info" onclick="toggleModal('historyModal')">📜 履歴</button>
@@ -9,10 +9,15 @@
     </h2>
 
     <div class="card-scroll-area">
-        <table>
+        <table class="viewer-table">
             <thead>
                 <tr>
-                    <th>名前</th><th>フォロー</th><th>滞在</th><th>回数</th><th>メモ</th><th style="width:80px;">Action</th>
+                    <th>名前</th>
+                    <th>フォロー</th>
+                    <th>滞在</th>
+                    <th>回数</th>
+                    <th>メモ</th>
+                    <th>SO</th>
                 </tr>
             </thead>
             <tbody id="viewer-tbody">
@@ -23,11 +28,10 @@
                     <td>{{ viewer.duration }}</td>
                     <td>{{ viewer.total }}回</td>
                     <td>
-                        <div class="memo-text">{{ viewer.memo }}</div>
-                        <button class="btn-memo" onclick="openMemoModal('{{ viewer.uid }}', '{{ viewer.name }}', '{{ viewer.memo|replace("'", "\\'") }}')">📝</button>
+                        <button class="btn-memo" title="{{ viewer.memo }}" onclick="openMemoModal('{{ viewer.uid }}', '{{ viewer.name }}', '{{ viewer.memo|replace("'", "\\'") }}')">📝</button>
                     </td>
-                    <td style="text-align:right; vertical-align:bottom;">
-                        <button class="btn-so" onclick="shoutout('{{ viewer.login }}', '{{ viewer.name }}')">📣 SO</button>
+                    <td>
+                        <button class="btn-so" onclick="shoutout('{{ viewer.login }}', '{{ viewer.name }}')">SO</button>
                     </td>
                 </tr>
                 {% else %}
