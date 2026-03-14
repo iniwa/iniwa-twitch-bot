@@ -1,39 +1,201 @@
-/* Dashboard layout */
-.dashboard-grid {
-    display: grid;
-    gap: 20px;
-    margin: 20px auto;
-    padding: 0 20px;
-    align-items: stretch;
+/* ============================================================
+   Dashboard — Layout A (sidebar + grid) & Layout B (3-pane)
+   ============================================================ */
+
+/* ---- Layout A ---- */
+body.layout-a #sidebar { display: flex; }
+body.layout-a #main-grid {
+  margin-left: 200px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), 1fr);
+  gap: 16px;
+  align-items: start;
+}
+body.layout-a #center-group { display: contents; }
+body.layout-a #center-tabs  { display: none !important; }
+body.layout-a .card[data-card="presets"],
+body.layout-a .card[data-card="rules"],
+body.layout-a .card[data-card="predictions"] { display: flex !important; }
+
+/* ---- Layout B ---- */
+body.layout-b #sidebar { display: none; }
+body.layout-b #main-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr 280px;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+}
+body.layout-b .card[data-card="viewers"] {
+  grid-column: 1;
+  height: calc(100vh - 48px);
+  border-radius: 0;
+  border-top: none;
+  border-left: none;
+  border-bottom: none;
+  overflow: hidden;
+}
+body.layout-b #center-group {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+body.layout-b .card[data-card="logs"] {
+  grid-column: 3;
+  height: calc(100vh - 48px);
+  border-radius: 0;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  overflow: hidden;
 }
 
-/* Control groups */
-form, .control-group, .rule-footer, .filter-bar { flex-shrink: 0; }
+/* Layout-B center tabs */
+body.layout-b #center-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+body.layout-b #center-tabs button {
+  flex: 1;
+  padding: 10px 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82em;
+  border-bottom: 2px solid transparent;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+body.layout-b #center-tabs button:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+body.layout-b #center-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-/* Logs */
-.logs { background: #1e1e1e; color: #00ff00; padding: 10px; font-family: monospace; font-size: 0.8em; border-radius: 6px; }
+/* Center cards in layout-b */
+body.layout-b .card[data-card="presets"],
+body.layout-b .card[data-card="rules"],
+body.layout-b .card[data-card="predictions"] {
+  flex: 1;
+  border-radius: 0;
+  border: none;
+  overflow: hidden;
+}
+/* Hide h2 in center-group for layout-b (tabs replace header) */
+body.layout-b #center-group h2 { display: none; }
 
-/* Rule cards */
-.rule-card { background: #fafbfc; border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 10px; }
+/* Tab visibility */
+body.layout-b .card[data-card="presets"]:not(.tab-active),
+body.layout-b .card[data-card="rules"]:not(.tab-active),
+body.layout-b .card[data-card="predictions"]:not(.tab-active) { display: none; }
+body.layout-b .card[data-card="presets"].tab-active,
+body.layout-b .card[data-card="rules"].tab-active,
+body.layout-b .card[data-card="predictions"].tab-active { display: flex; }
+
+/* ---- Rule cards ---- */
+.rule-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
 .rule-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-.rule-body { margin-bottom: 8px; }
+.rule-body   { margin-bottom: 8px; }
 .rule-footer { display: flex; justify-content: space-between; align-items: center; }
-.input-mini { width: 60px; padding: 4px; }
-.status-active { color: #2e7d32; font-weight: bold; font-size: 0.85em; }
-.status-sleep { color: #888; font-size: 0.85em; }
-.timer-info { font-size: 0.8em; color: #6441a5; margin-left: 5px; }
-.remaining-info { font-size: 0.8em; color: #e91e63; margin-left: 3px; }
+.input-mini  { width: 60px; padding: 4px; }
+.status-active   { color: var(--success); font-weight: bold; font-size: 0.85em; }
+.status-sleep    { color: var(--text-secondary); font-size: 0.85em; }
+.timer-info      { font-size: 0.8em; color: var(--accent); margin-left: 5px; }
+.remaining-info  { font-size: 0.8em; color: #e91e63; margin-left: 3px; }
 
-/* Filter bar */
-.filter-bar { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-.filter-btn { padding: 5px 12px; border: 1px solid #ddd; background: #fff; border-radius: 15px; cursor: pointer; font-size: 0.85em; color: #555; transition: 0.2s; }
-.filter-btn:hover { background: #f0f0f0; }
-.filter-btn.active { background: #6441a5; color: white; border-color: #6441a5; }
+/* ---- Filter bar ---- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.filter-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.82em;
+  color: var(--text-secondary);
+  transition: 0.2s;
+}
+.filter-btn:hover  { color: var(--text-primary); border-color: var(--accent); }
+.filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-/* Layout table */
+/* ---- Preset items ---- */
+.preset-item {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.preset-item .preset-name { font-weight: bold; color: var(--accent); }
+.preset-item .preset-game { font-size: 0.85em; color: var(--text-secondary); }
+
+/* ---- Prediction ---- */
+.prediction-active {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+.prediction-active .pred-title { font-weight: bold; font-size: 1.05em; color: var(--text-primary); }
+.prediction-preset-item {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ---- Logs ---- */
+.logs {
+  background: var(--bg-primary);
+  color: #a9dc76;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 0.8em;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+/* ---- Shoutout form ---- */
+.so-form { display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0; }
+
+/* ---- Layout settings table (in modal) ---- */
 .layout-table { width: 100%; font-size: 0.9em; margin-top: 10px; }
-.layout-table th, .layout-table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+.layout-table th, .layout-table td { padding: 8px; border-bottom: 1px solid var(--border); text-align: left; }
 .layout-table input { width: 80px; padding: 4px; }
 
-/* Shoutout form */
-.so-form { display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0; }
+/* ---- Control group in logs card ---- */
+form, .control-group, .rule-footer, .filter-bar { flex-shrink: 0; }
+
+/* ---- Drag interaction (Sortable.js) ---- */
+.sortable-ghost { opacity: 0.35; border: 2px dashed var(--accent) !important; }
+.sortable-drag  { box-shadow: 0 8px 28px rgba(0,0,0,0.6) !important; }
+body.layout-a .card { cursor: grab; }
+body.layout-a .card:active { cursor: grabbing; }
+body.layout-a .card input,
+body.layout-a .card button,
+body.layout-a .card a,
+body.layout-a .card table,
+body.layout-a .card textarea,
+body.layout-a .card select { cursor: auto; }
+body.layout-a .card button { cursor: pointer; }

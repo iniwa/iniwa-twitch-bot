@@ -16,7 +16,7 @@
                     {% for uid, follower in history.items() %}
                     {% if follower.is_follower or follower.unfollowed_at %}
                     <tr>
-                        <td><b>{{ follower.name }}</b><br><span style="font-size:0.8em; color:#888;">({{ follower.login }})</span></td>
+                        <td><b>{{ follower.name }}</b><br><span style="font-size:0.8em; color:var(--text-secondary);">({{ follower.login }})</span></td>
                         <td data-sort="{{ 1 if follower.is_follower else 0 }}">
                             {% if follower.is_follower %}<span class="follow-status">✅ フォロー中</span>{% else %}<span class="unfollow-status">💔 解除済み</span>{% endif %}
                         </td>

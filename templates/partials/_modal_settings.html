@@ -9,22 +9,22 @@
             <div class="form-group"><label>Broadcaster ID</label><input type="text" name="broadcaster_id" value="{{ config.broadcaster_id }}"></div>
             <div class="form-group"><label>Bot User ID</label><input type="text" name="bot_user_id" value="{{ config.bot_user_id }}"></div>
             <div class="form-group"><label>Channel Name</label><input type="text" name="channel_name" value="{{ config.channel_name }}"></div>
-            <div style="margin-top:20px; padding:10px; background:#f9f9f9; border-radius:5px;">
+            <div style="margin-top:20px; padding:10px; background:var(--bg-tertiary); border-radius:5px; border:1px solid var(--border);">
                 <label style="display:inline-block; margin-right:15px; margin-bottom:5px;"><input type="checkbox" name="debug_mode" {% if config.debug_mode %}checked{% endif %}> デバッグモード</label><br>
                 <label style="display:inline-block; margin-right:15px; margin-bottom:5px;"><input type="checkbox" name="ignore_stream_status" {% if config.ignore_stream_status %}checked{% endif %}> 配信外でもBotを稼働する</label><br>
-                <label style="display:inline-block; margin-top:5px; font-weight:bold; color:#e91e63;"><input type="checkbox" name="enable_welcome" {% if config.enable_welcome %}checked{% endif %}> ✨ 初コメント時に「ようこそ！」と挨拶する</label><br>
-                <label style="display:inline-block; margin-top:5px; font-weight:bold; color:#6441a5;"><input type="checkbox" name="hide_self_bot" {% if config.get('hide_self_bot') %}checked{% endif %}> 👻 配信者本人とBotをリストから隠す</label>
-                <div style="margin-top:10px; padding:10px; background:#e8f5e9; border:1px solid #c8e6c9; border-radius:4px;">
-                    <label style="display:inline-block; font-weight:bold; color:#2e7d32;"><input type="checkbox" name="enable_vod_download" {% if config.get('enable_vod_download') %}checked{% endif %}> 🎥 配信終了後にアーカイブを自動ダウンロード</label>
-                    <div style="margin-top:5px; font-size:0.85em; color:#555;">保存先: <span style="font-family:monospace;">/app/downloads</span> (固定)</div>
+                <label style="display:inline-block; margin-top:5px; font-weight:bold; color:#f06292;"><input type="checkbox" name="enable_welcome" {% if config.enable_welcome %}checked{% endif %}> ✨ 初コメント時に「ようこそ！」と挨拶する</label><br>
+                <label style="display:inline-block; margin-top:5px; font-weight:bold; color:var(--accent);"><input type="checkbox" name="hide_self_bot" {% if config.get('hide_self_bot') %}checked{% endif %}> 👻 配信者本人とBotをリストから隠す</label>
+                <div style="margin-top:10px; padding:10px; background:rgba(0,184,148,0.1); border:1px solid rgba(0,184,148,0.3); border-radius:4px;">
+                    <label style="display:inline-block; font-weight:bold; color:var(--success);"><input type="checkbox" name="enable_vod_download" {% if config.get('enable_vod_download') %}checked{% endif %}> 🎥 配信終了後にアーカイブを自動ダウンロード</label>
+                    <div style="margin-top:5px; font-size:0.85em; color:var(--text-secondary);">保存先: <span style="font-family:monospace;">/app/downloads</span> (固定)</div>
                 </div>
                 <div style="margin-top:10px;">
-                    <label style="color:#555;">🚫 非表示ユーザーリスト</label>
+                    <label style="color:var(--text-secondary);">🚫 非表示ユーザーリスト</label>
                     <textarea name="ignored_users_list" rows="3">{{ config.get('ignored_users', []) | join('\n') }}</textarea>
                 </div>
             </div>
-            <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #ddd;">
-                <label style="color:#333; font-weight:bold;">🎨 レイアウト設定</label>
+            <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
+                <label style="color:var(--text-secondary); font-weight:bold;">🎨 レイアウト設定</label>
                 <div style="display:flex; gap:10px; margin-bottom:10px; margin-top:5px;">
                     <div style="flex:1;">全体マス数: <input type="number" name="layout_columns" value="{{ config.layout.columns }}" min="1" max="6" style="width:60px; padding:4px;"></div>
                     <div style="flex:1;">全体最大幅(px): <input type="number" name="layout_max_width" value="{{ config.layout.max_width }}" style="width:80px; padding:4px;"></div>
@@ -62,8 +62,8 @@
             </div>
             <div style="margin-top:20px; text-align:right;"><button class="btn btn-primary">保存して閉じる</button></div>
         </form>
-        <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #ddd;">
-            <label style="color:#555; font-weight:bold;">🛠️ デバッグアクション</label>
+        <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
+            <label style="color:var(--text-secondary); font-weight:bold;">🛠️ デバッグアクション</label>
             <div style="margin-top:5px; display:flex; gap:5px; flex-wrap:wrap;">
                 <form action="/debug_update_followers" method="post" onsubmit="return confirm('API実行しますか？');" style="flex:1;">
                     <button class="btn btn-info" style="width:100%;">🔄 フォロワー更新</button>

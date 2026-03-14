@@ -1,4 +1,4 @@
-<div class="card" style="order: {{ config.layout.cards.logs.order }}; grid-column: span {{ config.layout.cards.logs.span }}; {% if config.layout.cards.logs.height > 0 %}height: {{ config.layout.cards.logs.height }}px;{% endif %}">
+<div class="card" data-card="logs">
     <h2>
         <div style="display:flex; align-items:center; gap:10px;">📜 ログ
             <span class="status-badge {{ 'running' if config.is_running else 'stopped' }}">{{ "🟢 稼働中" if config.is_running else "🔴 停止中" }}</span>

@@ -70,13 +70,13 @@
                                     {% if data.encode_status == 'encoded' %}
                                         <span class="status-dl" title="エンコード済 ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">✅ エンコード済</span>
                                     {% elif data.encode_status == 'missing' %}
-                                        <span style="color:#e65100;" title="ファイルが見つかりません">⚠️ ファイル不明</span>
+                                        <span style="color:var(--warning);" title="ファイルが見つかりません">⚠️ ファイル不明</span>
                                     {% else %}
-                                        <span style="color:#1565c0;" title="エンコード待ち ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">🕐 エンコード待ち</span>
+                                        <span style="color:#7eb8f7;" title="エンコード待ち ({{ '{:.1f}'.format(data.archive_file_size / 1073741824) }}GB)">🕐 エンコード待ち</span>
                                     {% endif %}
                                 {% elif data.vod_status == 'downloading' %}<div class="status-wait">⏳ DL中...</div>
                                 {% elif data.vod_status == 'failed' %}<span class="status-fail">❌ 失敗</span>
-                                {% else %}<span style="color:#aaa;">- 未保存</span>{% endif %}
+                                {% else %}<span style="color:var(--text-secondary);">- 未保存</span>{% endif %}
                             </td>
                             <td class="nowrap">
                                 <button class="btn btn-edit" onclick="openEditStreamModal('{{ sid }}', '{{ data.title|replace("'", "\\'")|replace('"', '&quot;') }}', '{{ data.game_name|replace("'", "\\'")|replace('"', '&quot;') }}')">✏️</button>
@@ -100,7 +100,7 @@
                     </tbody>
                 </table>
                 </div>
-                {% else %}<div style="text-align:center; padding:20px; color:#888;">まだ記録された配信データがありません</div>{% endif %}
+                {% else %}<div style="text-align:center; padding:20px; color:var(--text-secondary);">まだ記録された配信データがありません</div>{% endif %}
             </div>
         </div>
 
@@ -128,7 +128,7 @@
                 </div>
             </div>
 
-            <hr style="margin: 30px 0; border:0; border-top:1px dashed #ccc;">
+            <hr style="margin: 30px 0; border:0; border-top:1px dashed var(--border);">
 
             <div class="analytics-grid">
                 <div class="card">
@@ -166,7 +166,7 @@
                     <button class="range-btn" id="btn-range-1M" onclick="setRange('1M')">最近1ヶ月</button>
                     <button class="range-btn" id="btn-range-1Y" onclick="setRange('1Y')">最近1年</button>
                     <button class="range-btn" id="btn-range-ALL" onclick="setRange('ALL')">全期間</button>
-                    <span style="margin:0 10px; color:#ccc;">|</span>
+                    <span style="margin:0 10px; color:var(--border);">|</span>
                     <input type="date" id="start-date" class="date-input" onchange="setRange('CUSTOM')">
                     <span style="font-weight:bold;">~</span>
                     <input type="date" id="end-date" class="date-input" onchange="setRange('CUSTOM')">
@@ -178,7 +178,7 @@
 
             <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
                 <div class="card">
-                    <h2>📈 期間内サマリー <span style="font-size:0.6em; color:#888; font-weight:normal;">※Bot計測分のみ</span></h2>
+                    <h2>📈 期間内サマリー <span style="font-size:0.6em; color:var(--text-secondary); font-weight:normal;">※Bot計測分のみ</span></h2>
                     <div class="stat-grid">
                         <div class="stat-box"><div class="stat-val" id="stat-avg-viewers">-</div><div class="stat-label">平均同接</div></div>
                         <div class="stat-box"><div class="stat-val" id="stat-total-time">-</div><div class="stat-label">総配信時間</div></div>

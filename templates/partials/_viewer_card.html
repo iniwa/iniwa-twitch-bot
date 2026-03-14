@@ -1,10 +1,20 @@
-<div class="card" style="order: {{ config.layout.cards.viewers.order }}; grid-column: span {{ config.layout.cards.viewers.span }}; {% if config.layout.cards.viewers.height > 0 %}height: {{ config.layout.cards.viewers.height }}px;{% endif %}">
-    <h2><div>📊 視聴者リスト <span id="viewer-count-span" style="font-size:0.8em; color:#666;">({{ active_viewers|length }}人)</span></div>
-        <div style="display:flex; gap:5px;"><a href="/analytics" class="btn btn-analytics">📈 アナリティクス</a><button class="btn btn-purple" onclick="toggleModal('followerModal')">👥 フォロワー</button><button class="btn btn-info" onclick="toggleModal('historyModal')">📜 履歴</button></div></h2>
+<div class="card" data-card="viewers">
+    <h2>
+        <div>📊 視聴者リスト <span id="viewer-count-span" style="font-size:0.8em; color:var(--text-secondary);">({{ active_viewers|length }}人)</span></div>
+        <div style="display:flex; gap:5px;">
+            <a href="/analytics" class="btn btn-analytics">📈 アナリティクス</a>
+            <button class="btn btn-purple" onclick="toggleModal('followerModal')">👥 フォロワー</button>
+            <button class="btn btn-info" onclick="toggleModal('historyModal')">📜 履歴</button>
+        </div>
+    </h2>
 
     <div class="card-scroll-area">
         <table>
-            <thead><tr><th>名前</th><th>フォロー</th><th>滞在</th><th>回数</th><th>メモ</th><th style="width:80px;">Action</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>名前</th><th>フォロー</th><th>滞在</th><th>回数</th><th>メモ</th><th style="width:80px;">Action</th>
+                </tr>
+            </thead>
             <tbody id="viewer-tbody">
                 {% for viewer in active_viewers %}
                 <tr>
@@ -21,11 +31,14 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" style="text-align:center; color:#999;">現在なし / オフライン</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">現在なし / オフライン</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <form action="/shoutout" method="post" class="so-form"><input type="text" name="target_name" placeholder="英語IDを入力 (例: iniwa)" required style="flex:1; padding:6px; border:1px solid #ddd; border-radius:4px;"><button class="btn btn-apply" style="padding:6px 15px; font-size:0.8em;">📣 紹介</button></form>
+    <form action="/shoutout" method="post" class="so-form">
+        <input type="text" name="target_name" placeholder="英語IDを入力 (例: iniwa)" required style="flex:1;">
+        <button class="btn btn-apply" style="padding:6px 15px; font-size:0.8em;">📣 紹介</button>
+    </form>
 </div>

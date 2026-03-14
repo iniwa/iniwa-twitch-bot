@@ -172,10 +172,15 @@ def index():
 
 @bp.route('/api/status')
 def api_status():
+    conf = c.load_config()
     return jsonify({
         "logs": c.logs,
         "viewers": get_active_viewers_data(),
-        "count": len(c.current_session_viewers)
+        "count": len(c.current_session_viewers),
+        "viewer_count": len(c.current_session_viewers),
+        "bot_active": conf.get('is_running', False),
+        "current_game": c.current_game or '',
+        "current_title": conf.get('current_title', ''),
     })
 
 

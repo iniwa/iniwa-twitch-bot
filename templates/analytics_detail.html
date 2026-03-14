@@ -15,14 +15,14 @@
         <div class="card">
             <h2>
                 <div>📊 {{ stream_info.title }}
-                <span style="font-size:0.6em; color:#666;">({{ stream_info.start_time | format_date }})</span>
+                <span style="font-size:0.6em; color:var(--text-secondary);">({{ stream_info.start_time | format_date }})</span>
                 {% if stream_info.source == 'api' %}<span class="source-api" style="font-size:0.6em; margin-left:10px;">API取得データ</span>{% endif %}
                 </div>
                 <a href="/analytics" class="btn btn-back" style="font-size:0.8em;">← 一覧へ戻る</a>
             </h2>
 
             {% if not has_log_file %}
-                <div style="padding:20px; text-align:center; color:#666; background:#f9f9f9; border-radius:8px;">
+                <div style="padding:20px; text-align:center; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border);">
                     <p>⚠️ この配信はBot稼働外のため、詳細なログ（グラフ・チャット）はありません。</p>
                     {% if stream_info.thumbnail_url %}
                     <img src="{{ stream_info.thumbnail_url.replace('%{width}', '640').replace('%{height}', '360') }}" style="max-width:100%; border-radius:8px; margin-top:10px;">
@@ -54,7 +54,7 @@
                         {% if line.type == 'msg' %}
                         <div class="chat-line"><span class="ts">[{{ line.time }}]</span><span class="usr {% if line.is_sub %}sub{% endif %}">{{ line.user }}:</span><span>{{ line.text }}</span></div>
                         {% elif line.type == 'point' %}
-                        <div class="chat-line"><span class="ts">[{{ line.time }}]</span><span class="pt">🎨 {{ line.user }} がポイント使用: {{ line.reward_id }}</span><span style="color:#888;">{{ line.text }}</span></div>
+                        <div class="chat-line"><span class="ts">[{{ line.time }}]</span><span class="pt">🎨 {{ line.user }} がポイント使用: {{ line.reward_id }}</span><span style="color:var(--text-secondary);">{{ line.text }}</span></div>
                         {% endif %}
                     {% endfor %}
                 </div>
@@ -64,7 +64,7 @@
                 <table>
                     {% for k, v in top_emotes %}
                     <tr>
-                        <td><img src="https://static-cdn.jtvnw.net/emoticons/v2/{{ k }}/default/dark/1.0" style="vertical-align:middle; margin-right:5px; width:32px; height:32px;"> <span style="font-size:0.8em; color:#666;">ID: {{ k }}</span></td>
+                        <td><img src="https://static-cdn.jtvnw.net/emoticons/v2/{{ k }}/default/dark/1.0" style="vertical-align:middle; margin-right:5px; width:32px; height:32px;"> <span style="font-size:0.8em; color:var(--text-secondary);">ID: {{ k }}</span></td>
                         <td style="text-align:right; font-weight:bold;">{{ v }}回</td>
                     </tr>
                     {% endfor %}

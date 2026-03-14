@@ -1,4 +1,4 @@
-<div class="card" style="order: {{ config.layout.cards.rules.order }}; grid-column: span {{ config.layout.cards.rules.span }}; {% if config.layout.cards.rules.height > 0 %}height: {{ config.layout.cards.rules.height }}px;{% endif %}">
+<div class="card" data-card="rules">
     <h2>🎮 自動チャットルール</h2>
     <div class="filter-bar">
         <button class="filter-btn active" onclick="filterRules('__ALL__', this)">全て表示</button>
@@ -12,9 +12,11 @@
             <div class="rule-card" data-game="{{ rule.game }}">
                 <div class="rule-header">
                     <div style="display:flex; gap:5px; align-items:center; flex:1;">
-                        <span style="font-weight:bold; color:#888; font-size:0.8em;">#{{ loop.index }}</span>
-                        <input type="text" name="name" value="{{ rule.name }}" placeholder="ルール名" style="font-weight:bold; width:120px; border:none; background:transparent; border-bottom:1px solid #ccc;">
-                        <input type="text" name="game" list="existing_games" value="{{ rule.game }}" placeholder="Game" style="width:150px; color:#555;">
+                        <span style="font-weight:bold; color:var(--text-secondary); font-size:0.8em;">#{{ loop.index }}</span>
+                        <input type="text" name="name" value="{{ rule.name }}" placeholder="ルール名"
+                            style="font-weight:bold; width:120px; border:none; background:transparent; border-bottom:1px solid var(--border); color:var(--text-primary);">
+                        <input type="text" name="game" list="existing_games" value="{{ rule.game }}" placeholder="Game"
+                            style="width:150px;">
                     </div>
                     <div style="text-align:right;">
                         {% if rule.is_active %}
@@ -26,10 +28,11 @@
                     </div>
                 </div>
                 <div class="rule-body">
-                    <input type="text" name="message" value="{{ rule.message }}" placeholder="送信メッセージ" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <input type="text" name="message" value="{{ rule.message }}" placeholder="送信メッセージ"
+                        style="width:100%; padding:8px;">
                 </div>
                 <div class="rule-footer">
-                    <div style="font-size:0.85em; display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+                    <div style="font-size:0.85em; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                         <span>間隔(分): <input type="number" name="interval" value="{{ rule.interval }}" class="input-mini"></span>
                         <span>必要数: <input type="number" name="min_comments" value="{{ rule.min_comments }}" class="input-mini">
                         {% if rule.is_active and rule.remaining_comments > 0 %}

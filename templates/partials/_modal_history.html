@@ -21,9 +21,9 @@
                 <tbody id="history-tbody">
                     {% for uid, hist in history.items() %}
                     <tr>
-                        <td>{{ hist.name }} <br><span style="font-size:0.8em; color:#888;">({{ hist.login if hist.login else "-" }})</span></td>
+                        <td>{{ hist.name }} <br><span style="font-size:0.8em; color:var(--text-secondary);">({{ hist.login if hist.login else "-" }})</span></td>
                         <td data-sort="{{ hist.followed_at|replace('-','') if hist.is_follower and hist.followed_at else 0 }}">
-                            {% if hist.is_follower %}<div class="follow-status">✅</div><div style="font-size:0.75em; color:#888;">{{ hist.followed_at }}~</div>{% else %}-{% endif %}
+                            {% if hist.is_follower %}<div class="follow-status">✅</div><div style="font-size:0.75em; color:var(--text-secondary);">{{ hist.followed_at }}~</div>{% else %}-{% endif %}
                         </td>
                         <td data-sort="{{ hist.total_visits }}">{{ hist.total_visits }}回</td>
                         <td data-sort="{{ hist.total_duration if hist.total_duration else 0 }}">{{ hist.total_duration | duration_format }}</td>

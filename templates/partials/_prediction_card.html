@@ -1,11 +1,11 @@
-<div class="card" style="order: {{ config.layout.cards.prediction.order }}; grid-column: span {{ config.layout.cards.prediction.span }}; {% if config.layout.cards.prediction.height > 0 %}height: {{ config.layout.cards.prediction.height }}px;{% endif %}">
+<div class="card" data-card="predictions">
     <h2>🎰 チャンネルポイント予想 (賭博)</h2>
     {% if current_prediction %}
         <div class="card-scroll-area">
-            <div style="background:#e3f2fd; padding:15px; border-radius:8px; border:1px solid #bbdefb; margin-bottom:15px;">
-                <div style="font-weight:bold; font-size:1.1em; color:#1565c0; display:flex; justify-content:space-between;">
-                    <span>進行中: {{ current_prediction.title }}</span>
-                    <span style="font-size:0.8em; background:white; padding:2px 8px; border-radius:10px;">
+            <div class="prediction-active">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                    <div class="pred-title">進行中: {{ current_prediction.title }}</div>
+                    <span style="font-size:0.8em; background:var(--bg-secondary); padding:2px 8px; border-radius:10px; border:1px solid var(--border); color:var(--text-secondary);">
                         {% set p_start = current_prediction.created_at | to_datetime %}
                         {% if p_start %}
                             残り: {{ (p_start + (current_prediction.prediction_window_seconds | seconds) - now) | duration_format }} 頃まで
@@ -19,28 +19,33 @@
                     {% set ns.total_points = ns.total_points + o.channel_points %}
                     {% set ns.total_users = ns.total_users + o.users %}
                 {% endfor %}
-                <div style="font-size:0.9em; color:#555; margin:10px 0;">
-                    参加者: <b>{{ ns.total_users }}人</b> / 総ポイント: <b>{{ ns.total_points }} pt</b>
+                <div style="font-size:0.9em; color:var(--text-secondary); margin:10px 0;">
+                    参加者: <b style="color:var(--text-primary);">{{ ns.total_users }}人</b> /
+                    総ポイント: <b style="color:var(--text-primary);">{{ ns.total_points }} pt</b>
                 </div>
-                <div style="display:flex; height:20px; width:100%; background:#eee; border-radius:10px; overflow:hidden; margin-bottom:15px;">
+                <div style="display:flex; height:20px; width:100%; background:var(--bg-primary); border-radius:10px; overflow:hidden; margin-bottom:15px; border:1px solid var(--border);">
                     {% for o in current_prediction.outcomes %}
                         {% if ns.total_points > 0 %}{% set pct = (o.channel_points / ns.total_points * 100) %}{% else %}{% set pct = 0 %}{% endif %}
-                        <div style="width:{{ pct }}%; background:{{ 'blue' if loop.index0==0 else ('deeppink' if loop.index0==1 else '#ff9800') }};" title="{{ o.title }}: {{ o.channel_points }}pt"></div>
+                        <div style="width:{{ pct }}%; background:{{ '#5c8df6' if loop.index0==0 else ('deeppink' if loop.index0==1 else '#ff9800') }};"
+                             title="{{ o.title }}: {{ o.channel_points }}pt"></div>
                     {% endfor %}
                 </div>
                 <form action="/resolve_prediction" method="post" style="display:flex; flex-direction:column; gap:5px;">
                     <input type="hidden" name="prediction_id" value="{{ current_prediction.id }}">
                     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
                         {% for outcome in current_prediction.outcomes %}
-                            <button name="winning_outcome_id" value="{{ outcome.id }}" class="btn" onclick="return confirm('「{{ outcome.title }}」を勝者として確定しますか？')"
-                            style="background:{{ 'blue' if loop.index0 == 0 else ('deeppink' if loop.index0 == 1 else '#fff') }};
-                                color:{{ '#fff' if loop.index0 < 2 else '#333' }}; border:1px solid #ccc; opacity:0.9; text-align:left; padding:10px;">
+                            <button name="winning_outcome_id" value="{{ outcome.id }}"
+                                class="btn" onclick="return confirm('「{{ outcome.title }}」を勝者として確定しますか？')"
+                                style="background:{{ '#5c8df6' if loop.index0==0 else ('deeppink' if loop.index0==1 else 'var(--bg-tertiary)') }};
+                                       color:#fff; border:1px solid var(--border); text-align:left; padding:10px;">
                                 <div style="font-weight:bold;">{{ outcome.title }}</div>
-                                <div style="font-size:0.8em;">{{ outcome.users }}人 / {{ outcome.channel_points }}pt</div>
+                                <div style="font-size:0.8em; opacity:0.8;">{{ outcome.users }}人 / {{ outcome.channel_points }}pt</div>
                             </button>
                         {% endfor %}
                     </div>
-                    <button name="cancel" value="1" class="btn btn-secondary" onclick="return confirm('予想をキャンセルしてポイントを返却しますか？')" style="margin-top:10px; align-self:flex-start;">🚫 キャンセル (返金)</button>
+                    <button name="cancel" value="1" class="btn btn-secondary"
+                        onclick="return confirm('予想をキャンセルしてポイントを返却しますか？')"
+                        style="margin-top:10px; align-self:flex-start;">🚫 キャンセル (返金)</button>
                 </form>
             </div>
         </div>
@@ -48,33 +53,37 @@
         <div class="card-scroll-area">
             <form action="/start_prediction" method="post">
                 {% for preset in config.get('prediction_presets', []) %}
-                    <div style="background:#f3e5f5; border:1px solid #e1bee7; padding:8px; border-radius:6px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-                        <div style="flex:1;">
-                            <div style="font-weight:bold; color:#7b1fa2;">{{ preset.title }}</div>
-                            <div style="font-size:0.8em; color:#666;">
-                                選択肢: {{ preset.outcomes | join(' / ') }} ({{ preset.duration }}秒)
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:5px;">
-                            <button type="submit" name="preset_index" value="{{ loop.index0 }}" class="btn btn-so" onclick="return confirm('この予想を開始しますか？')">開始</button>
-                            <button type="button" class="btn btn-edit"
-                                data-title="{{ preset.title|forceescape }}"
-                                data-outcomes="{{ preset.outcomes|tojson|forceescape }}"
-                                onclick="openEditPredictionModal({{ loop.index0 }}, this.getAttribute('data-title'), {{ preset.duration }}, this.getAttribute('data-outcomes'))">✏️</button>
-                            <button type="submit" formaction="/delete_prediction_preset/{{ loop.index0 }}" class="btn btn-danger" style="padding:2px 6px;">🗑️</button>
+                <div class="prediction-preset-item">
+                    <div style="flex:1;">
+                        <div style="font-weight:bold; color:var(--accent);">{{ preset.title }}</div>
+                        <div style="font-size:0.8em; color:var(--text-secondary);">
+                            選択肢: {{ preset.outcomes | join(' / ') }} ({{ preset.duration }}秒)
                         </div>
                     </div>
+                    <div style="display:flex; gap:5px;">
+                        <button type="submit" name="preset_index" value="{{ loop.index0 }}" class="btn btn-so"
+                            onclick="return confirm('この予想を開始しますか？')">開始</button>
+                        <button type="button" class="btn btn-edit"
+                            data-title="{{ preset.title|forceescape }}"
+                            data-outcomes="{{ preset.outcomes|tojson|forceescape }}"
+                            onclick="openEditPredictionModal({{ loop.index0 }}, this.getAttribute('data-title'), {{ preset.duration }}, this.getAttribute('data-outcomes'))">✏️</button>
+                        <button type="submit" formaction="/delete_prediction_preset/{{ loop.index0 }}" class="btn btn-danger" style="padding:2px 6px;">🗑️</button>
+                    </div>
+                </div>
                 {% endfor %}
             </form>
         </div>
-        <form action="/add_prediction_preset" method="post" style="border-top:1px solid #eee; padding-top:10px;">
-            <div style="font-weight:bold; color:#555; margin-bottom:5px;">新規作成</div>
-            <div class="form-group"><input type="text" name="title" placeholder="予想タイトル" required></div>
+        <form action="/add_prediction_preset" method="post" style="border-top:1px solid var(--border); padding-top:10px;">
+            <div style="font-weight:bold; color:var(--text-secondary); margin-bottom:5px;">新規作成</div>
+            <div class="form-group">
+                <input type="text" name="title" placeholder="予想タイトル" required>
+            </div>
             <div id="new_pred_outcomes_container">
                 <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 1" style="flex:1;" required></div>
                 <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 2" style="flex:1;" required></div>
             </div>
-            <button type="button" class="btn btn-secondary" style="font-size:0.8em; margin-bottom:10px;" onclick="addOutcomeInput('new_pred_outcomes_container')">＋ 選択肢を増やす</button>
+            <button type="button" class="btn btn-secondary" style="font-size:0.8em; margin-bottom:10px;"
+                onclick="addOutcomeInput('new_pred_outcomes_container')">＋ 選択肢を増やす</button>
             <div style="display:flex; gap:5px;">
                 <input type="number" name="duration" placeholder="秒数" value="120" style="width:80px;" required>
                 <button class="btn btn-info" style="flex:1;">保存</button>

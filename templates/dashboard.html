@@ -5,8 +5,12 @@
 {% endblock %}
 
 {% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-    function toggleModal(id) { const modal = document.getElementById(id); modal.style.display = (modal.style.display === "block") ? "none" : "block"; }
+    function toggleModal(id) {
+        var modal = document.getElementById(id);
+        modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+    }
 
     function openMemoModal(uid, name, currentMemo) {
         document.getElementById('memo_user_id').value = uid;
@@ -14,69 +18,68 @@
         document.getElementById('memo_text').value = currentMemo;
         toggleModal('memoModal');
     }
+
     function filterRules(gameName, btnElement) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        if(btnElement) btnElement.classList.add('active');
-        const cards = document.querySelectorAll('.rule-card');
-        cards.forEach(card => {
-            const cardGame = card.getAttribute('data-game');
-            if (gameName === '__ALL__' || cardGame === gameName) { card.style.display = 'block'; } else { card.style.display = 'none'; }
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        if (btnElement) btnElement.classList.add('active');
+        document.querySelectorAll('.rule-card').forEach(function(card) {
+            var cardGame = card.getAttribute('data-game');
+            card.style.display = (gameName === '__ALL__' || cardGame === gameName) ? 'block' : 'none';
         });
     }
+
     function shoutout(loginName, displayName) {
-        if(!confirm(displayName + ' (' + loginName + ') さんをシャウトアウトしますか？')) return;
-        const form = document.createElement('form');
+        if (!confirm(displayName + ' (' + loginName + ') さんをシャウトアウトしますか？')) return;
+        var form = document.createElement('form');
         form.method = 'POST'; form.action = '/shoutout';
-        const input = document.createElement('input'); input.type = 'hidden'; input.name = 'target_name'; input.value = loginName;
+        var input = document.createElement('input');
+        input.type = 'hidden'; input.name = 'target_name'; input.value = loginName;
         form.appendChild(input); document.body.appendChild(form); form.submit();
     }
+
     function sortTable(tableId, n, forceDir) {
-        var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-        table = document.getElementById(tableId); var headers = table.getElementsByTagName("TH"); var currentHeader = headers[n];
+        var table = document.getElementById(tableId);
+        var headers = table.getElementsByTagName('TH');
+        var currentHeader = headers[n];
+        var dir;
         if (forceDir) { dir = forceDir; }
-        else { var isAsc = currentHeader.classList.contains('asc'); dir = isAsc ? "desc" : "asc"; }
-        for (var h of headers) { h.classList.remove('asc', 'desc'); } currentHeader.classList.add(dir);
-        switching = true;
+        else { dir = currentHeader.classList.contains('asc') ? 'desc' : 'asc'; }
+        for (var h of headers) { h.classList.remove('asc', 'desc'); }
+        currentHeader.classList.add(dir);
+        var switching = true;
         while (switching) {
-            switching = false; rows = table.getElementsByTagName("TR");
-            for (i = 1; i < (rows.length - 1); i++) {
-                shouldSwitch = false; x = rows[i].getElementsByTagName("TD")[n]; y = rows[i + 1].getElementsByTagName("TD")[n];
-                var xVal = x.getAttribute("data-sort") ? parseFloat(x.getAttribute("data-sort")) : x.innerHTML.toLowerCase();
-                var yVal = y.getAttribute("data-sort") ? parseFloat(y.getAttribute("data-sort")) : y.innerHTML.toLowerCase();
-                if (dir == "asc") { if (xVal > yVal) { shouldSwitch = true; break; } }
-                else if (dir == "desc") { if (xVal < yVal) { shouldSwitch = true; break; } }
+            switching = false;
+            var rows = table.getElementsByTagName('TR');
+            for (var i = 1; i < rows.length - 1; i++) {
+                var x = rows[i].getElementsByTagName('TD')[n];
+                var y = rows[i + 1].getElementsByTagName('TD')[n];
+                var xVal = x.getAttribute('data-sort') ? parseFloat(x.getAttribute('data-sort')) : x.innerHTML.toLowerCase();
+                var yVal = y.getAttribute('data-sort') ? parseFloat(y.getAttribute('data-sort')) : y.innerHTML.toLowerCase();
+                var shouldSwitch = (dir === 'asc') ? xVal > yVal : xVal < yVal;
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                }
             }
-            if (shouldSwitch) { rows[i].parentNode.insertBefore(rows[i + 1], rows[i]); switching = true; switchcount ++; }
         }
     }
 
-    function addOutcomeInput(containerId, value="") {
-        const container = document.getElementById(containerId);
-        const count = container.querySelectorAll('input').length;
+    function addOutcomeInput(containerId, value) {
+        value = value || '';
+        var container = document.getElementById(containerId);
+        var count = container.querySelectorAll('input').length;
         if (count >= 10) return;
-
-        const div = document.createElement('div');
-        div.style.display = 'flex';
-        div.style.gap = '5px';
-        div.style.marginBottom = '5px';
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.name = 'outcomes';
+        var div = document.createElement('div');
+        div.style.cssText = 'display:flex; gap:5px; margin-bottom:5px;';
+        var input = document.createElement('input');
+        input.type = 'text'; input.name = 'outcomes';
         input.placeholder = '選択肢 ' + (count + 1);
-        input.value = value;
-        input.style.flex = '1';
-        input.required = true;
-
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.innerText = '✕';
-        btn.className = 'btn btn-danger';
-        btn.style.padding = '0 8px';
+        input.value = value; input.style.flex = '1'; input.required = true;
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.innerText = '✕';
+        btn.className = 'btn btn-danger'; btn.style.padding = '0 8px';
         btn.onclick = function() { container.removeChild(div); };
-
-        div.appendChild(input);
-        div.appendChild(btn);
+        div.appendChild(input); div.appendChild(btn);
         container.appendChild(div);
     }
 
@@ -84,12 +87,9 @@
         document.getElementById('edit_pred_index').value = index;
         document.getElementById('edit_pred_title').value = title;
         document.getElementById('edit_pred_duration').value = duration;
-
-        const container = document.getElementById('edit_pred_outcomes_container');
+        var container = document.getElementById('edit_pred_outcomes_container');
         container.innerHTML = '';
-        const outcomes = JSON.parse(outcomesJson);
-        outcomes.forEach(o => addOutcomeInput('edit_pred_outcomes_container', o));
-
+        JSON.parse(outcomesJson).forEach(function(o) { addOutcomeInput('edit_pred_outcomes_container', o); });
         toggleModal('editPredictionModal');
     }
 
@@ -105,83 +105,93 @@
 
     function fetchCurrentSettings() {
         fetch('/api/current_settings')
-            .then(r => r.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    const form = document.getElementById('addPresetForm');
-                    if(form) {
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    var form = document.getElementById('addPresetForm');
+                    if (form) {
                         form.querySelector('input[name="game"]').value = data.game_name;
                         form.querySelector('input[name="title"]').value = data.title;
-                        if(data.tags && Array.isArray(data.tags)) {
+                        if (data.tags && Array.isArray(data.tags)) {
                             form.querySelector('input[name="tags"]').value = data.tags.join(', ');
                         }
-                        const nameInput = form.querySelector('input[name="name"]');
-                        if(!nameInput.value) { nameInput.value = "現在の設定"; }
+                        var nameInput = form.querySelector('input[name="name"]');
+                        if (!nameInput.value) nameInput.value = '現在の設定';
                     }
-                } else {
-                    alert('情報の取得に失敗しました。');
-                }
+                } else { alert('情報の取得に失敗しました。'); }
             })
-            .catch(e => alert('エラーが発生しました: ' + e));
+            .catch(function(e) { alert('エラーが発生しました: ' + e); });
     }
 
     function tweetStream() {
         fetch('/api/current_settings')
-            .then(r => r.json())
-            .then(data => {
-                if(data.status === 'success') {
-                    const url = `https://twitch.tv/{{ config.channel_name }}`;
-                    let tags = "";
-                    if (data.tweet_tags && data.tweet_tags.trim() !== "") {
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    var url = 'https://twitch.tv/{{ config.channel_name }}';
+                    var tags = '';
+                    if (data.tweet_tags && data.tweet_tags.trim() !== '') {
                         tags = data.tweet_tags;
                     } else {
-                        const gameTag = data.game_name ? '#' + data.game_name.replace(/\s+/g, '') : '';
-                        tags = `${gameTag} #Twitch #配信`;
+                        var gameTag = data.game_name ? '#' + data.game_name.replace(/\s+/g, '') : '';
+                        tags = gameTag + ' #Twitch #配信';
                     }
-                    const text = `配信開始しました！\n${data.title}\n${tags}\n`;
-                    const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                    var text = '配信開始しました！\n' + data.title + '\n' + tags + '\n';
+                    var tweetUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url);
                     window.open(tweetUrl, '_blank');
-                } else {
-                    alert('配信情報の取得に失敗しました。');
-                }
+                } else { alert('配信情報の取得に失敗しました。'); }
             })
-            .catch(e => alert('エラーが発生しました: ' + e));
+            .catch(function(e) { alert('エラーが発生しました: ' + e); });
     }
 </script>
 {% endblock %}
 
 {% block content %}
-    <datalist id="existing_games"><option value="All"><option value="Default">{% for g in unique_games %}<option value="{{ g }}">{% endfor %}</datalist>
-    <div class="dashboard-grid" style="grid-template-columns: repeat({{ config.layout.columns }}, 1fr); max-width: {{ config.layout.max_width }}px;">
+<datalist id="existing_games">
+    <option value="All">
+    <option value="Default">
+    {% for g in unique_games %}<option value="{{ g }}">{% endfor %}
+</datalist>
 
-        {% include "partials/_viewer_card.html" %}
-        {% include "partials/_preset_card.html" %}
-        {% include "partials/_prediction_card.html" %}
-        {% include "partials/_rules_card.html" %}
-        {% include "partials/_logs_card.html" %}
+<div id="main-grid">
 
-    </div>
+    {% include "partials/_viewer_card.html" %}
 
-    {% include "partials/_modal_add_rule.html" %}
-    {% include "partials/_modal_settings.html" %}
-    {% include "partials/_modal_edit_preset.html" %}
-    {% include "partials/_modal_edit_prediction.html" %}
-    {% include "partials/_modal_history.html" %}
-    {% include "partials/_modal_followers.html" %}
-
-    <div id="memoModal" class="modal" style="z-index: 2000;">
-        <div class="modal-content" style="max-width:500px;">
-            <span class="close" onclick="toggleModal('memoModal')">&times;</span>
-            <h2 style="border:none;">📝 メモ編集: <span id="memo_user_name"></span></h2>
-            <form action="/save_memo" method="post">
-                <input type="hidden" id="memo_user_id" name="user_id">
-                <textarea id="memo_text" name="memo" rows="4" style="width:100%; padding:8px; box-sizing:border-box;"></textarea>
-                <div style="margin-top:10px; text-align:right;">
-                    <button class="btn btn-primary">保存</button>
-                </div>
-            </form>
+    <div id="center-group">
+        <div id="center-tabs">
+            <button data-tab="presets"     onclick="switchCenterTab('presets')">📂 プリセット</button>
+            <button data-tab="rules"       onclick="switchCenterTab('rules')">🎮 ルール</button>
+            <button data-tab="predictions" onclick="switchCenterTab('predictions')">🎰 予想</button>
         </div>
+        {% include "partials/_preset_card.html" %}
+        {% include "partials/_rules_card.html" %}
+        {% include "partials/_prediction_card.html" %}
     </div>
+
+    {% include "partials/_logs_card.html" %}
+
+</div>
+
+{% include "partials/_modal_add_rule.html" %}
+{% include "partials/_modal_settings.html" %}
+{% include "partials/_modal_edit_preset.html" %}
+{% include "partials/_modal_edit_prediction.html" %}
+{% include "partials/_modal_history.html" %}
+{% include "partials/_modal_followers.html" %}
+
+<div id="memoModal" class="modal" style="z-index: 2000;">
+    <div class="modal-content" style="max-width:500px;">
+        <span class="close" onclick="toggleModal('memoModal')">&times;</span>
+        <h2 style="border:none;">📝 メモ編集: <span id="memo_user_name"></span></h2>
+        <form action="/save_memo" method="post">
+            <input type="hidden" id="memo_user_id" name="user_id">
+            <textarea id="memo_text" name="memo" rows="4" style="width:100%;"></textarea>
+            <div style="margin-top:10px; text-align:right;">
+                <button class="btn btn-primary">保存</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
