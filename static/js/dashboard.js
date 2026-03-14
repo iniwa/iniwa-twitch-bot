@@ -1,42 +1,70 @@
 // ============================================================
-// Sortable.js initialization (layout-a)
+// Monitor mode initialization
 // ============================================================
-function initSortable() {
-    var grid = document.getElementById('main-grid');
-    if (!grid || window._sortable) return;
-    if (typeof Sortable === 'undefined') return;
-    window._sortable = Sortable.create(grid, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        dragClass: 'sortable-drag',
-        filter: 'input, button, a, select, textarea, .no-drag',
-        preventOnFilter: false,
-        onEnd: saveCardOrder
-    });
-    restoreCardOrder();
+function initLayoutM() {
+    // Trigger immediate poll to fill monitor data without waiting 10s
+    pollStatus();
 }
 
-function saveCardOrder() {
-    var children = document.querySelectorAll('#main-grid > [data-card], #main-grid > #center-group');
-    var order = Array.from(children).map(function(c) {
-        return c.dataset.card || c.id;
-    });
-    localStorage.setItem('cardOrder', JSON.stringify(order));
+// ============================================================
+// Monitor center updater
+// ============================================================
+function escHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
-function restoreCardOrder() {
-    var saved = localStorage.getItem('cardOrder');
-    if (!saved) return;
-    try {
-        var order = JSON.parse(saved);
-        var grid = document.getElementById('main-grid');
-        if (!grid) return;
-        order.forEach(function(key) {
-            var el = grid.querySelector('[data-card="' + key + '"]') ||
-                     grid.querySelector('#' + key);
-            if (el) grid.appendChild(el);
-        });
-    } catch(e) {}
+function updateMonitor(data) {
+    // Stats
+    var elViewers  = document.getElementById('monitor-stat-viewers');
+    var elComments = document.getElementById('monitor-stat-comments');
+    var elActive   = document.getElementById('monitor-stat-active-rules');
+    if (elViewers)  elViewers.textContent  = data.viewer_count || data.count || 0;
+    if (elComments) elComments.textContent = data.total_comments || 0;
+
+    var rules = data.rules_status;
+    if (!rules) return;
+
+    var activeCount = rules.filter(function(r) { return r.is_active; }).length;
+    if (elActive) elActive.textContent = activeCount + '/' + rules.length;
+
+    var list = document.getElementById('monitor-rules-list');
+    if (!list) return;
+
+    var html = '';
+    rules.forEach(function(rule) {
+        var cardCls = 'monitor-rule-card ' + (rule.is_active ? 'is-active' : 'is-sleeping');
+        var statusHtml = rule.is_active
+            ? '<span class="status-active">&#x2705; 稼働中</span>'
+            : '<span class="monitor-sleep-text">&#x1F4A4; ' + escHtml(rule.reason) + '</span>';
+        var footerHtml = '';
+        if (rule.is_active) {
+            footerHtml = '<div class="monitor-rule-footer">' +
+                '<span class="monitor-timer">&#x23F0; ' + escHtml(rule.next_run) + '</span>' +
+                (rule.remaining_comments > 0
+                    ? '<span class="monitor-remaining">&#x1F4AC; あと' + rule.remaining_comments + 'コメント</span>'
+                    : '<span style="color:var(--success); font-size:0.85em;">&#x2714; 条件OK</span>') +
+                '</div>';
+        }
+        html += '<div class="' + cardCls + '">' +
+            '<div class="monitor-rule-top">' +
+                '<span class="monitor-rule-name">' + escHtml(rule.name) +
+                    '<span class="monitor-rule-game">' + escHtml(rule.game) + '</span>' +
+                '</span>' +
+                statusHtml +
+            '</div>' +
+            '<div class="monitor-rule-msg">' + escHtml(rule.message) + '</div>' +
+            footerHtml +
+            '</div>';
+    });
+
+    if (!html) {
+        html = '<div style="text-align:center; color:var(--text-secondary); padding:20px;">ルールが設定されていません</div>';
+    }
+    list.innerHTML = html;
 }
 
 // ============================================================
@@ -55,11 +83,12 @@ function updateTopBar(data) {
 }
 
 // ============================================================
-// Dashboard polling (10s interval)
+// Dashboard polling (10s interval + immediate on load)
 // ============================================================
-setInterval(function() {
+function pollStatus() {
     fetch('/api/status').then(function(r) { return r.json(); }).then(function(data) {
         updateTopBar(data);
+        updateMonitor(data);
 
         var logContainer = document.getElementById('log-container');
         if (logContainer) {
@@ -92,7 +121,9 @@ setInterval(function() {
             }
         }
     }).catch(function(e) { console.error(e); });
+}
 
+function pollHistory() {
     fetch('/api/history').then(function(r) { return r.json(); }).then(function(data) {
         var table = document.getElementById('historyTable');
         var tbody = document.getElementById('history-tbody');
@@ -124,4 +155,12 @@ setInterval(function() {
             sortTable('historyTable', sortIdx, sortDir);
         }
     }).catch(function(e) { console.error(e); });
-}, 10000);
+}
+
+// Start polling
+setInterval(function() { pollStatus(); pollHistory(); }, 10000);
+// Initial load (runs after DOMContentLoaded via common.js layout restore, but initLayoutM also calls pollStatus)
+document.addEventListener('DOMContentLoaded', function() {
+    pollStatus();
+    pollHistory();
+});

@@ -80,32 +80,8 @@ body {
 }
 #layout-toggle:hover { background: var(--accent); border-color: var(--accent); }
 
-/* ---- Sidebar (layout-a only) ---- */
-#sidebar {
-  display: none;
-  width: 200px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  flex-direction: column;
-  padding: 12px 8px;
-  gap: 4px;
-  position: fixed;
-  top: 48px;
-  left: 0;
-  height: calc(100vh - 48px);
-  overflow-y: auto;
-  z-index: 800;
-}
-#sidebar a {
-  color: var(--text-secondary);
-  text-decoration: none;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 0.9em;
-  transition: 0.2s;
-  display: block;
-}
-#sidebar a:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+/* ---- Sidebar (unused, kept for legacy) ---- */
+#sidebar { display: none; }
 
 /* ---- Cards ---- */
 .card {
@@ -334,13 +310,15 @@ textarea:focus {
   .modal-content { width: 95%; max-width: none; }
 }
 @media (max-width: 900px) {
-  body.layout-a #main-grid,
-  body.layout-b #main-grid { grid-template-columns: 1fr !important; height: auto !important; }
+  body.layout-b #main-grid,
+  body.layout-m #main-grid { grid-template-columns: 1fr !important; height: auto !important; min-width: unset !important; }
   body.layout-b .card[data-card="viewers"],
   body.layout-b #center-group,
-  body.layout-b .card[data-card="logs"] { height: auto !important; grid-column: 1 !important; }
-  body.layout-a #sidebar { display: none !important; }
-  body.layout-a #main-grid { margin-left: 0 !important; }
+  body.layout-b .card[data-card="logs"],
+  body.layout-m .card[data-card="viewers"],
+  body.layout-m #monitor-center,
+  body.layout-m .card[data-card="logs"] { height: auto !important; grid-column: 1 !important; }
+  body.layout-m #monitor-center { display: flex !important; }
   .modal-content { margin: 0; width: 100%; max-width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; }
   #top-bar .status-area { display: none; }
   table { display: block; overflow-x: auto; }

@@ -5,7 +5,6 @@
 {% endblock %}
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
     function toggleModal(id) {
         var modal = document.getElementById(id);
@@ -166,6 +165,53 @@
         {% include "partials/_preset_card.html" %}
         {% include "partials/_rules_card.html" %}
         {% include "partials/_prediction_card.html" %}
+    </div>
+
+    <div id="monitor-center">
+        <div id="monitor-header">
+            <div id="monitor-title">📡 配信モニター</div>
+            <div id="monitor-stats">
+                <div class="monitor-stat">
+                    <span class="monitor-stat-val" id="monitor-stat-viewers">{{ active_viewers|length }}</span>
+                    <span class="monitor-stat-label">視聴者</span>
+                </div>
+                <div class="monitor-stat">
+                    <span class="monitor-stat-val" id="monitor-stat-comments">0</span>
+                    <span class="monitor-stat-label">コメント数</span>
+                </div>
+                <div class="monitor-stat">
+                    <span class="monitor-stat-val" id="monitor-stat-active-rules">-</span>
+                    <span class="monitor-stat-label">稼働ルール</span>
+                </div>
+            </div>
+        </div>
+        <div id="monitor-rules-list">
+            {% for rule in config.rules %}
+            <div class="monitor-rule-card {{ 'is-active' if rule.is_active else 'is-sleeping' }}">
+                <div class="monitor-rule-top">
+                    <span class="monitor-rule-name">{{ rule.name }}<span class="monitor-rule-game">{{ rule.game }}</span></span>
+                    {% if rule.is_active %}
+                    <span class="status-active">✅ 稼働中</span>
+                    {% else %}
+                    <span class="monitor-sleep-text">💤 {{ rule.reason }}</span>
+                    {% endif %}
+                </div>
+                <div class="monitor-rule-msg">{{ rule.message }}</div>
+                {% if rule.is_active %}
+                <div class="monitor-rule-footer">
+                    <span class="monitor-timer">⏰ {{ rule.next_run }}</span>
+                    {% if rule.remaining_comments > 0 %}
+                    <span class="monitor-remaining">💬 あと{{ rule.remaining_comments }}コメント</span>
+                    {% else %}
+                    <span style="color:var(--success); font-size:0.85em;">✔ 条件OK</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div style="text-align:center; color:var(--text-secondary); padding:20px;">ルールが設定されていません</div>
+            {% endfor %}
+        </div>
     </div>
 
     {% include "partials/_logs_card.html" %}

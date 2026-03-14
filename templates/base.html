@@ -22,13 +22,8 @@
             <span id="top-game"></span>
             <span id="top-viewers">👁 0</span>
         </div>
-        <button id="layout-toggle" onclick="toggleLayout()">B</button>
+        <button id="layout-toggle" onclick="toggleLayout()" title="モニターモードへ切り替え">📡</button>
     </div>
-
-    <nav id="sidebar">
-        <a href="/" {% if request.path == '/' %}style="color:var(--accent);"{% endif %}>📊 ダッシュボード</a>
-        <a href="/analytics" {% if '/analytics' in request.path %}style="color:var(--accent);"{% endif %}>📈 アナリティクス</a>
-    </nav>
 
     <div id="toast-container"></div>
 

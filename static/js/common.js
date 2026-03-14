@@ -1,22 +1,30 @@
 // ============================================================
-// Layout management
+// Layout management (B = 管理モード, M = モニターモード)
 // ============================================================
 function setLayout(mode) {
-    document.body.classList.remove('layout-a', 'layout-b');
+    document.body.classList.remove('layout-a', 'layout-b', 'layout-m');
     document.body.classList.add('layout-' + mode);
     localStorage.setItem('layout', mode);
     var btn = document.getElementById('layout-toggle');
-    if (btn) btn.textContent = mode.toUpperCase();
-    if (mode === 'a') {
-        if (typeof initSortable === 'function') initSortable();
-    } else {
+    if (btn) {
+        if (mode === 'b') {
+            btn.textContent = '📡';
+            btn.title = 'モニターモードへ切り替え';
+        } else {
+            btn.textContent = '📊';
+            btn.title = '管理モードへ切り替え';
+        }
+    }
+    if (mode === 'b') {
         if (typeof initLayoutB === 'function') initLayoutB();
+    } else if (mode === 'm') {
+        if (typeof initLayoutM === 'function') initLayoutM();
     }
 }
 
 function toggleLayout() {
     var cur = localStorage.getItem('layout') || 'b';
-    setLayout(cur === 'a' ? 'b' : 'a');
+    setLayout(cur === 'b' ? 'm' : 'b');
 }
 
 // Center tab switching (layout-b)
@@ -39,6 +47,8 @@ function initLayoutB() {
 // Restore layout on load
 document.addEventListener('DOMContentLoaded', function() {
     var saved = localStorage.getItem('layout') || 'b';
+    // Migrate old 'a' value to 'b'
+    if (saved === 'a') saved = 'b';
     setLayout(saved);
 });
 

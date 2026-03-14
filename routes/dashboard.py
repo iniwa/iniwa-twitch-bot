@@ -170,6 +170,58 @@ def index():
     )
 
 
+def get_rules_status():
+    conf = c.load_config()
+    current_game = c.current_game if c.current_game else ""
+    current_total_comments = c.state.get_count()
+    now = c.get_now()
+    has_specific = any(
+        r["game"] == current_game
+        for r in conf.get("rules", [])
+        if r["game"] not in ["All", "Default"]
+    )
+    rules = []
+    for i, rule in enumerate(conf.get("rules", [])):
+        g = rule["game"]
+        is_active = False
+        reason = "-"
+        if g == "All":
+            is_active = True
+        elif g == "Default":
+            is_active = not has_specific
+            reason = "専用優先" if has_specific else ""
+        elif g == current_game:
+            is_active = True
+        else:
+            reason = "不一致"
+        entry = {
+            "index": i,
+            "name": rule.get("name", ""),
+            "message": rule.get("message", ""),
+            "game": rule.get("game", ""),
+            "is_active": is_active,
+            "reason": reason,
+            "remaining_comments": 0,
+            "next_run": "",
+            "next_run_mins": 0,
+        }
+        if is_active:
+            last = c.rule_last_executed.get(i, datetime.min.replace(tzinfo=c.JST))
+            last_count = c.rule_last_comment_count.get(i, 0)
+            diff = current_total_comments - last_count
+            remaining = int(rule.get("min_comments", 2)) - diff
+            entry["remaining_comments"] = max(0, remaining)
+            if last == datetime.min.replace(tzinfo=c.JST):
+                entry["next_run"] = "すぐ"
+                entry["next_run_mins"] = 0
+            else:
+                mins = int(((last + timedelta(minutes=int(rule.get("interval", 15)))) - now).total_seconds() / 60)
+                entry["next_run"] = "条件待ち" if mins < 0 else f"あと約{mins}分"
+                entry["next_run_mins"] = max(0, mins)
+        rules.append(entry)
+    return rules
+
+
 @bp.route('/api/status')
 def api_status():
     conf = c.load_config()
@@ -181,6 +233,8 @@ def api_status():
         "bot_active": conf.get('is_running', False),
         "current_game": c.current_game or '',
         "current_title": conf.get('current_title', ''),
+        "rules_status": get_rules_status(),
+        "total_comments": c.state.get_count(),
     })
 
 
