@@ -10,6 +10,7 @@ env:
   REGISTRY: ghcr.io
   # github.repository は "iniwa/リポジトリ名" の形式で自動取得されます
   IMAGE_NAME: ${{ github.repository }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -50,7 +51,7 @@ jobs:
 
       # ビルドとプッシュ
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
