@@ -1,0 +1,29 @@
+<div id="modalNewPrediction" class="modal" style="z-index: 2500;">
+    <div class="modal-content" style="max-width:480px;">
+        <span class="close" onclick="toggleModal('modalNewPrediction')">&times;</span>
+        <h2 style="border:none;">🎰 新規プリセット作成</h2>
+        <form action="/add_prediction_preset" method="post">
+            <div class="form-group">
+                <label>予想タイトル</label>
+                <input type="text" name="title" placeholder="例: 今日のランク戦で勝てる？" required>
+            </div>
+            <div class="form-group">
+                <label>選択肢</label>
+                <div id="modal_pred_outcomes_container">
+                    <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 1" style="flex:1;" required></div>
+                    <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 2" style="flex:1;" required></div>
+                </div>
+                <button type="button" class="btn btn-secondary" style="font-size:0.8em; margin-top:4px;"
+                    onclick="addOutcomeInput('modal_pred_outcomes_container')">＋ 選択肢を増やす</button>
+            </div>
+            <div class="form-group">
+                <label>投票時間 (秒)</label>
+                <input type="number" name="duration" value="120" min="30" required style="width:100px;">
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button type="button" class="btn btn-secondary" onclick="toggleModal('modalNewPrediction')" style="margin-right:8px;">キャンセル</button>
+                <button class="btn btn-info">保存</button>
+            </div>
+        </form>
+    </div>
+</div>

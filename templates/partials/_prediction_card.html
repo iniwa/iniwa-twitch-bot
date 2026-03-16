@@ -73,21 +73,26 @@
                 {% endfor %}
             </form>
         </div>
-        <form action="/add_prediction_preset" method="post" style="border-top:1px solid var(--border); padding-top:10px;">
+        <div class="pred-new-btn-wrap" style="display:none; border-top:1px solid var(--border); padding:10px; justify-content:center;">
+            <button type="button" class="btn btn-info" style="width:100%;" onclick="toggleModal('modalNewPrediction')">＋ 新規プリセット作成</button>
+        </div>
+        <div class="pred-new-inline" style="border-top:1px solid var(--border); padding-top:10px;">
             <div style="font-weight:bold; color:var(--text-secondary); margin-bottom:5px;">新規作成</div>
-            <div class="form-group">
-                <input type="text" name="title" placeholder="予想タイトル" required>
-            </div>
-            <div id="new_pred_outcomes_container">
-                <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 1" style="flex:1;" required></div>
-                <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 2" style="flex:1;" required></div>
-            </div>
-            <button type="button" class="btn btn-secondary" style="font-size:0.8em; margin-bottom:10px;"
-                onclick="addOutcomeInput('new_pred_outcomes_container')">＋ 選択肢を増やす</button>
-            <div style="display:flex; gap:5px;">
-                <input type="number" name="duration" placeholder="秒数" value="120" style="width:80px;" required>
-                <button class="btn btn-info" style="flex:1;">保存</button>
-            </div>
-        </form>
+            <form action="/add_prediction_preset" method="post">
+                <div class="form-group">
+                    <input type="text" name="title" placeholder="予想タイトル" required>
+                </div>
+                <div id="new_pred_outcomes_container">
+                    <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 1" style="flex:1;" required></div>
+                    <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" name="outcomes" placeholder="選択肢 2" style="flex:1;" required></div>
+                </div>
+                <button type="button" class="btn btn-secondary" style="font-size:0.8em; margin-bottom:10px;"
+                    onclick="addOutcomeInput('new_pred_outcomes_container')">＋ 選択肢を増やす</button>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" name="duration" placeholder="秒数" value="120" style="width:80px;" required>
+                    <button class="btn btn-info" style="flex:1;">保存</button>
+                </div>
+            </form>
+        </div>
     {% endif %}
 </div>

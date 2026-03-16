@@ -118,18 +118,22 @@ body.layout-m .card[data-card="logs"] {
   overflow: hidden;
 }
 
-/* Monitor-mode prediction card */
+/* Monitor-mode prediction card (bottom panel) */
 body.layout-m .monitor-prediction-wrap {
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   overflow-y: auto;
-  max-height: 40%;
+  max-height: 45%;
 }
 body.layout-m .monitor-prediction-wrap .card[data-card="predictions"] {
   border-radius: 0;
   border: none;
   height: auto;
+  flex-shrink: 0;
 }
+/* In monitor mode: hide inline new-preset form, show popup button */
+body.layout-m .pred-new-inline { display: none !important; }
+body.layout-m .pred-new-btn-wrap { display: flex !important; }
 
 /* ---- Monitor Center ---- */
 #monitor-header {

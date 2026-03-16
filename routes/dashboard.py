@@ -265,6 +265,10 @@ def api_search_games():
     q = request.args.get('q', '').strip()
     if not q:
         return jsonify([])
-    conf = c.load_config()
-    from services.twitch_api import search_games
-    return jsonify(search_games(conf, q))
+    try:
+        conf = c.load_config()
+        from services.twitch_api import search_games
+        return jsonify(search_games(conf, q))
+    except Exception as e:
+        c.log(f"⚠️ ゲーム検索エラー: {e}")
+        return jsonify([]), 500

@@ -172,9 +172,6 @@
     <div class="resize-handle" id="resize-right"></div>
 
     <div id="monitor-center">
-        <div class="monitor-prediction-wrap">
-            {% include "partials/_prediction_card.html" %}
-        </div>
         <div id="monitor-header">
             <div id="monitor-title">📡 配信モニター</div>
             <div id="monitor-stats">
@@ -219,6 +216,9 @@
             <div style="text-align:center; color:var(--text-secondary); padding:20px;">ルールが設定されていません</div>
             {% endfor %}
         </div>
+        <div class="monitor-prediction-wrap">
+            {% include "partials/_prediction_card.html" %}
+        </div>
     </div>
 
     {% include "partials/_logs_card.html" %}
@@ -227,6 +227,7 @@
 
 {% include "partials/_modal_add_rule.html" %}
 {% include "partials/_modal_game_search.html" %}
+{% include "partials/_modal_new_prediction.html" %}
 {% include "partials/_modal_settings.html" %}
 {% include "partials/_modal_edit_preset.html" %}
 {% include "partials/_modal_edit_prediction.html" %}
@@ -246,6 +247,10 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block top_bar_extras %}
+<button id="tweet-btn" onclick="tweetStream()" title="Twitterに配信情報を投稿" style="background:none; border:1px solid var(--border); border-radius:6px; color:var(--text-secondary); cursor:pointer; font-size:0.85em; padding:4px 10px; line-height:1.4;">𝕏 ツイート</button>
 {% endblock %}
 
 {% block extra_js %}
