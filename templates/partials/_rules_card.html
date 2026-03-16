@@ -1,10 +1,24 @@
 <div class="card" data-card="rules">
     <h2>🎮 自動チャットルール</h2>
-    <div class="filter-bar">
+    <div class="filter-bar" id="rules-filter-bar">
         <button class="filter-btn active" onclick="filterRules('__ALL__', this)">全て表示</button>
-        {% for g in unique_games %}
-        <button class="filter-btn" onclick="filterRules('{{ g }}', this)">{{ g }}</button>
-        {% endfor %}
+        {% set game_list = unique_games %}
+        {% if game_list|length <= 10 %}
+            {% for g in game_list %}
+            <button class="filter-btn" onclick="filterRules('{{ g }}', this)">{{ g }}</button>
+            {% endfor %}
+        {% else %}
+            <input type="text" id="rules-game-filter-input" placeholder="🔍 ゲーム名で絞り込み..."
+                oninput="filterRulesBySearch(this.value)"
+                style="flex:1; min-width:120px; max-width:220px; padding:4px 8px; border:1px solid var(--border); border-radius:12px; background:var(--bg-tertiary); color:var(--text-primary); font-size:0.82em;">
+            <select id="rules-game-filter-select" onchange="filterRules(this.value, null)"
+                style="padding:4px 8px; border:1px solid var(--border); border-radius:12px; background:var(--bg-tertiary); color:var(--text-primary); font-size:0.82em; max-width:180px;">
+                <option value="__ALL__">全てのゲーム ({{ game_list|length }})</option>
+                {% for g in game_list %}
+                <option value="{{ g }}">{{ g }}</option>
+                {% endfor %}
+            </select>
+        {% endif %}
     </div>
     <div class="card-scroll-area">
         <form id="saveRulesForm" action="/save_rules" method="post">
@@ -15,8 +29,11 @@
                         <span style="font-weight:bold; color:var(--text-secondary); font-size:0.8em;">#{{ loop.index }}</span>
                         <input type="text" name="name" value="{{ rule.name }}" placeholder="ルール名"
                             style="font-weight:bold; width:120px; border:none; background:transparent; border-bottom:1px solid var(--border); color:var(--text-primary);">
-                        <input type="text" name="game" list="existing_games" value="{{ rule.game }}" placeholder="Game"
-                            style="width:150px;">
+                        <div style="display:flex; gap:3px; align-items:center;">
+                            <input type="text" name="game" id="ruleGame{{ loop.index0 }}" list="existing_games" value="{{ rule.game }}" placeholder="Game"
+                                style="width:130px;">
+                            <button type="button" class="btn btn-secondary" onclick="openGameSearch('ruleGame{{ loop.index0 }}')" title="Twitchで検索" style="padding:3px 6px; font-size:0.85em;">🔍</button>
+                        </div>
                     </div>
                     <div style="text-align:right;">
                         {% if rule.is_active %}

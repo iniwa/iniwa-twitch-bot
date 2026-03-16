@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request
 from datetime import datetime, timedelta
 import config as c
 from services.predictions import get_current_prediction

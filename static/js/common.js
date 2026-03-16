@@ -77,27 +77,32 @@ function initResize() {
     var grid = document.getElementById('main-grid');
     if (!grid) return;
 
-    // Restore saved widths
+    // Restore saved widths for both modes
     var savedLeft  = localStorage.getItem('col-left');
     var savedRight = localStorage.getItem('col-right');
     if (savedLeft)  grid.style.setProperty('--col-left',  savedLeft  + 'px');
     if (savedRight) grid.style.setProperty('--col-right', savedRight + 'px');
+    var savedLeftM  = localStorage.getItem('col-left-m');
+    var savedRightM = localStorage.getItem('col-right-m');
+    if (savedLeftM)  grid.style.setProperty('--col-left-m',  savedLeftM  + 'px');
+    if (savedRightM) grid.style.setProperty('--col-right-m', savedRightM + 'px');
 
-    function makeResizer(handleId, varName, storageKey, getNewWidth) {
+    function makeResizer(handleId, getVarAndKey, getNewWidth) {
         var handle = document.getElementById(handleId);
         if (!handle) return;
         handle.addEventListener('mousedown', function(e) {
             e.preventDefault();
             handle.classList.add('dragging');
+            var vk = getVarAndKey();
             var startX = e.clientX;
             var startWidth = parseInt(
-                getComputedStyle(grid).getPropertyValue(varName) || '0', 10
+                getComputedStyle(grid).getPropertyValue(vk.varName) || '0', 10
             );
             function onMove(ev) {
                 var newWidth = getNewWidth(startWidth, ev.clientX - startX);
                 newWidth = Math.max(180, Math.min(600, newWidth));
-                grid.style.setProperty(varName, newWidth + 'px');
-                localStorage.setItem(storageKey, newWidth);
+                grid.style.setProperty(vk.varName, newWidth + 'px');
+                localStorage.setItem(vk.storageKey, newWidth);
             }
             function onUp() {
                 handle.classList.remove('dragging');
@@ -109,8 +114,21 @@ function initResize() {
         });
     }
 
-    makeResizer('resize-left',  '--col-left',  'col-left',  function(sw, dx) { return sw + dx; });
-    makeResizer('resize-right', '--col-right', 'col-right', function(sw, dx) { return sw - dx; });
+    function isMonitorMode() {
+        return document.body.classList.contains('layout-m');
+    }
+
+    makeResizer('resize-left', function() {
+        return isMonitorMode()
+            ? { varName: '--col-left-m', storageKey: 'col-left-m' }
+            : { varName: '--col-left', storageKey: 'col-left' };
+    }, function(sw, dx) { return sw + dx; });
+
+    makeResizer('resize-right', function() {
+        return isMonitorMode()
+            ? { varName: '--col-right-m', storageKey: 'col-right-m' }
+            : { varName: '--col-right', storageKey: 'col-right' };
+    }, function(sw, dx) { return sw - dx; });
 }
 
 document.addEventListener('DOMContentLoaded', initResize);

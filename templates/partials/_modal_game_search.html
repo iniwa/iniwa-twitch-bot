@@ -63,7 +63,7 @@ function runGameSearch() {
         })
         .catch(function(err) {
             console.error('Game search error:', err);
-            resultsEl.innerHTML = '<div style="color:var(--warning); padding:8px;">取得失敗（Twitchトークンを確認してください）</div>';
+            resultsEl.innerHTML = '<div style="color:var(--warning); padding:8px;">取得失敗（サーバーエラー: ' + err.message + '）</div>';
         });
 }
 

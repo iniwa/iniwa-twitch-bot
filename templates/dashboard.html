@@ -21,9 +21,22 @@
     function filterRules(gameName, btnElement) {
         document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
         if (btnElement) btnElement.classList.add('active');
+        var searchInput = document.getElementById('rules-game-filter-input');
+        if (searchInput) searchInput.value = '';
         document.querySelectorAll('.rule-card').forEach(function(card) {
             var cardGame = card.getAttribute('data-game');
             card.style.display = (gameName === '__ALL__' || cardGame === gameName) ? 'block' : 'none';
+        });
+    }
+
+    function filterRulesBySearch(query) {
+        var q = query.toLowerCase().trim();
+        var select = document.getElementById('rules-game-filter-select');
+        if (select) select.value = '__ALL__';
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.rule-card').forEach(function(card) {
+            var cardGame = card.getAttribute('data-game') || '';
+            card.style.display = (!q || cardGame.toLowerCase().indexOf(q) !== -1) ? 'block' : 'none';
         });
     }
 
