@@ -109,8 +109,14 @@
   padding: 5px;
   position: relative;
   border-radius: 4px;
+  cursor: pointer;
 }
 .cal-day:hover { background: var(--bg-primary); }
+.cal-day.in-timeline {
+  background: rgba(100, 65, 165, 0.18);
+  border-color: rgba(100, 65, 165, 0.55);
+}
+.cal-day.in-timeline:hover { background: rgba(100, 65, 165, 0.28); }
 .cal-date-num  { font-size: 0.9em; font-weight: bold; color: var(--text-primary); margin-bottom: 5px; }
 .cal-event {
   background: rgba(145,71,255,0.25);

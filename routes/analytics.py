@@ -85,6 +85,21 @@ def analytics_list():
         if sorted_dates[-1] < today_str:
             follower_history.append({"x": today_str, "y": current_count})
 
+        # 配信日をデータポイントとして追加（変化点以外の配信タイミングも記録）
+        existing_dates = {p["x"] for p in follower_history}
+        for s in sorted_list:
+            sd = (s.get('start_time') or '')[:10]
+            if sd and sd not in existing_dates:
+                count_at_date = 0
+                for p in follower_history:
+                    if p["x"] <= sd:
+                        count_at_date = p["y"]
+                    else:
+                        break
+                follower_history.append({"x": sd, "y": count_at_date})
+                existing_dates.add(sd)
+        follower_history.sort(key=lambda p: p["x"])
+
     follower_history_json = json.dumps(follower_history, ensure_ascii=False)
     all_streams_json = json.dumps(sorted_list, ensure_ascii=False)
 

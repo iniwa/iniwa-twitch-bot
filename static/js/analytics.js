@@ -39,7 +39,7 @@ function setRange(rangeType) {
     if (rangeType === '1W') { startDate.setDate(now.getDate() - 7); }
     else if (rangeType === '1M') { startDate.setMonth(now.getMonth() - 1); }
     else if (rangeType === '1Y') { startDate.setFullYear(now.getFullYear() - 1); }
-    else if (rangeType === 'ALL') { startDate = new Date(2020, 0, 1); }
+    else if (rangeType === 'ALL') { startDate = allStreams.length > 0 ? new Date(allStreams[allStreams.length - 1].start_time) : new Date(2020, 0, 1); }
     else if (rangeType === 'CUSTOM') {
         var s = document.getElementById('start-date').value;
         var e = document.getElementById('end-date').value;
@@ -169,6 +169,19 @@ function renderSimpleList(data, elementId) {
     }).join('');
 }
 
+// Set timeline start date from calendar click
+function setTimelineStartDate(dateStr) {
+    var d = new Date(dateStr);
+    d.setDate(d.getDate() + 6);
+    timelineEndDate = d;
+    var picker = document.getElementById('timelinePicker');
+    if (picker) {
+        picker.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    renderWeeklyTimeline();
+    renderCalendar(currentYear, currentMonth);
+}
+
 // Calendar
 function changeMonth(d) {
     currentMonth += d;
@@ -188,6 +201,13 @@ function renderCalendar(year, month) {
     var monthStart = new Date(year, month, 1);
     var monthEnd = new Date(year, month + 1, 0, 23, 59, 59);
 
+    // タイムラインの現在範囲
+    var tlEnd = new Date(timelineEndDate);
+    var tlStart = new Date(timelineEndDate);
+    tlStart.setDate(tlStart.getDate() - 6);
+    var tlStartStr = formatDateForInput(tlStart);
+    var tlEndStr = formatDateForInput(tlEnd);
+
     var monthlyData = allStreams.filter(function(s) {
         var d = new Date(s.start_time);
         return d >= new Date(monthStart.getTime() - 86400000) && d <= new Date(monthEnd.getTime() + 86400000);
@@ -199,6 +219,8 @@ function renderCalendar(year, month) {
     for (var day = 1; day <= daysInMonth; day++) {
         var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
         var eventsHtml = '';
+        var inTimeline = dateStr >= tlStartStr && dateStr <= tlEndStr;
+        var tlClass = inTimeline ? ' in-timeline' : '';
 
         var daysStreams = monthlyData.filter(function(s) {
             var utcDate = new Date(s.start_time);
@@ -211,9 +233,9 @@ function renderCalendar(year, month) {
             var utcDate = new Date(s.start_time);
             var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
             var timeStr = jstDate.toISOString().substring(11, 16);
-            eventsHtml += '<div class="cal-event" onclick="window.location.href=\'/analytics/stream/' + s.sid + '\'" title="' + s.title + '">🎥 ' + timeStr + ' ' + s.game_name + '</div>';
+            eventsHtml += '<div class="cal-event" onclick="event.stopPropagation(); window.location.href=\'/analytics/stream/' + s.sid + '\'" title="' + s.title + '">🎥 ' + timeStr + ' ' + s.game_name + '</div>';
         });
-        grid.innerHTML += '<div class="cal-day"><div class="cal-date-num">' + day + '</div>' + eventsHtml + '</div>';
+        grid.innerHTML += '<div class="cal-day' + tlClass + '" onclick="setTimelineStartDate(\'' + dateStr + '\')"><div class="cal-date-num">' + day + '</div>' + eventsHtml + '</div>';
     }
 }
 
@@ -342,6 +364,47 @@ function updateYAxis(axisId, field, value) {
     }
 }
 
+// Adjust y-axis ranges to currently visible x range
+function adjustYAxisToVisible() {
+    if (!trendChart) return;
+    var xScale = trendChart.scales.x;
+    var visMin = new Date(xScale.min);
+    var visMax = new Date(xScale.max);
+
+    var visStreams = allStreams.filter(function(s) {
+        var d = new Date(s.start_time);
+        return d >= visMin && d <= visMax;
+    });
+    var visFollowers = followerHistory.filter(function(f) {
+        var d = new Date(f.x);
+        return d >= visMin && d <= visMax;
+    });
+
+    if (visStreams.length > 0) {
+        var maxV = Math.max.apply(null, visStreams.map(function(s) { return s.max_viewers || 0; }));
+        var durVals = visStreams.map(function(s) {
+            if (!s.duration) return 0;
+            var parts = s.duration.match(/(\d+)h\s*(\d+)m/) || s.duration.match(/(\d+)m/);
+            if (!parts) return 0;
+            return parts.length === 3 ? parseInt(parts[1]) * 60 + parseInt(parts[2]) : parseInt(parts[1]);
+        });
+        var maxD = Math.max.apply(null, durVals);
+        yAxisRanges.y = { min: 0, max: maxV || 10 };
+        yAxisRanges.y2 = { min: 0, max: maxD || 60 };
+    }
+    if (visFollowers.length > 0) {
+        var fVals = visFollowers.map(function(f) { return f.y || 0; });
+        yAxisRanges.y1 = { min: Math.max(0, Math.min.apply(null, fVals)), max: Math.max.apply(null, fVals) || 100 };
+    }
+
+    ['y', 'y1', 'y2'].forEach(function(axisId) {
+        trendChart.options.scales[axisId].min = yAxisRanges[axisId].min;
+        trendChart.options.scales[axisId].max = yAxisRanges[axisId].max;
+    });
+    trendChart.update('none');
+    syncYAxisInputs();
+}
+
 // Reset y-axis ranges to auto-calculated values and redraw
 function resetYAxisRanges() {
     yAxisRanges = { y: {}, y1: {}, y2: {} };
@@ -373,18 +436,17 @@ function renderChart(data, minDate, maxDate) {
     // Initialize y-axis ranges from all data on first render
     if (yAxisRanges.y.max === undefined) {
         var maxV = Math.max.apply(null, allStreams.map(function(s) { return s.max_viewers || 0; }).concat([0]));
-        yAxisRanges.y = { min: 0, max: Math.ceil(maxV * 1.15) || 100 };
+        yAxisRanges.y = { min: 0, max: maxV || 100 };
     }
     if (yAxisRanges.y1.max === undefined && followerHistory && followerHistory.length > 0) {
         var fVals = followerHistory.map(function(f) { return f.y || 0; });
         var minF = Math.min.apply(null, fVals);
         var maxF = Math.max.apply(null, fVals);
-        var padF = Math.max((maxF - minF) * 0.1, maxF * 0.05, 100);
-        yAxisRanges.y1 = { min: Math.max(0, Math.floor(minF - padF)), max: Math.ceil(maxF + padF) };
+        yAxisRanges.y1 = { min: Math.max(0, minF), max: maxF || 100 };
     }
     if (yAxisRanges.y2.max === undefined) {
         var maxD = Math.max.apply(null, pointsDurations.map(function(p) { return p.y || 0; }).concat([0]));
-        yAxisRanges.y2 = { min: 0, max: Math.ceil(maxD * 1.15) || 300 };
+        yAxisRanges.y2 = { min: 0, max: maxD || 300 };
     }
 
     if (trendChart) { trendChart.destroy(); }
@@ -393,7 +455,7 @@ function renderChart(data, minDate, maxDate) {
         data: {
             datasets: [
                 { label: '最大同接数', data: pointsViewers, borderColor: '#6441a5', backgroundColor: '#6441a5', yAxisID: 'y', tension: 0.1 },
-                { label: 'フォロワー数', data: followerHistory, borderColor: '#e91e63', backgroundColor: '#e91e63', yAxisID: 'y1', tension: 0.1, pointRadius: 0, borderWidth: 2, stepped: true },
+                { label: 'フォロワー数', data: followerHistory, borderColor: '#e91e63', backgroundColor: '#e91e63', yAxisID: 'y1', tension: 0.1, pointRadius: 0, borderWidth: 2 },
                 { label: '配信時間(分)', data: pointsDurations, borderColor: '#009688', backgroundColor: 'rgba(0,150,136,0.1)', fill: true, tension: 0.1, yAxisID: 'y2' }
             ]
         },
