@@ -389,7 +389,7 @@ function renderWeeklyTimeline() {
                 y: { title: { display: true, text: '日付' } }
             },
             plugins: {
-                legend: { labels: { generateLabels: function() { return [{ text: '配信時間帯', fillStyle: 'rgba(100, 65, 165, 0.6)', strokeStyle: 'rgba(100, 65, 165, 1)', lineWidth: 1 }]; } } },
+                legend: { labels: { color: '#efeff1', generateLabels: function() { return [{ text: '配信時間帯', fillStyle: 'rgba(100, 65, 165, 0.6)', strokeStyle: 'rgba(100, 65, 165, 1)', fontColor: '#efeff1', lineWidth: 1 }]; } } },
                 tooltip: { callbacks: { label: function(ctx) { return ctx.raw.title || ''; } } }
             }
         }
