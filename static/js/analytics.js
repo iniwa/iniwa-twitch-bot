@@ -169,6 +169,36 @@ function renderSimpleList(data, elementId) {
     }).join('');
 }
 
+// Monthly list renderer with calendar hover highlight
+function renderMonthlyList(data) {
+    var tbody = document.getElementById('monthly-list-tbody');
+    if (!tbody) return;
+    var sorted = data.slice().sort(function(a, b) { return new Date(b.start_time) - new Date(a.start_time); });
+    if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
+        return;
+    }
+    tbody.innerHTML = sorted.map(function(s) {
+        var utcDate = new Date(s.start_time);
+        var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
+        var dateStr = jstDate.toISOString().substring(0, 10);
+        return '<tr data-date="' + dateStr + '" onmouseenter="highlightCalDay(\'' + dateStr + '\')" onmouseleave="unhighlightCalDay(\'' + dateStr + '\')">' +
+            '<td style="width:120px;">' + s.start_time.substring(5, 16).replace('T', ' ') + '</td>' +
+            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + s.title + '</a></td>' +
+            '<td>' + s.game_name + '</td><td style="width:80px;">' + (s.duration_short || '-') + '</td></tr>';
+    }).join('');
+}
+
+function highlightCalDay(dateStr) {
+    var el = document.querySelector('.cal-day[data-date="' + dateStr + '"]');
+    if (el) el.classList.add('hover-highlight');
+}
+
+function unhighlightCalDay(dateStr) {
+    var el = document.querySelector('.cal-day[data-date="' + dateStr + '"]');
+    if (el) el.classList.remove('hover-highlight');
+}
+
 // Set timeline start date from calendar click
 function setTimelineStartDate(dateStr) {
     var d = new Date(dateStr);
@@ -212,7 +242,7 @@ function renderCalendar(year, month) {
         var d = new Date(s.start_time);
         return d >= new Date(monthStart.getTime() - 86400000) && d <= new Date(monthEnd.getTime() + 86400000);
     });
-    renderSimpleList(monthlyData, 'monthly-list-tbody');
+    renderMonthlyList(monthlyData);
 
     for (var i = 0; i < firstDay; i++) { grid.innerHTML += '<div class="cal-day other-month"></div>'; }
 
@@ -233,9 +263,9 @@ function renderCalendar(year, month) {
             var utcDate = new Date(s.start_time);
             var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
             var timeStr = jstDate.toISOString().substring(11, 16);
-            eventsHtml += '<div class="cal-event" onclick="event.stopPropagation(); window.location.href=\'/analytics/stream/' + s.sid + '\'" title="' + s.title + '">🎥 ' + timeStr + ' ' + s.game_name + '</div>';
+            eventsHtml += '<div class="cal-event" onclick="event.stopPropagation(); window.location.href=\'/analytics/stream/' + s.sid + '\'" title="' + s.title + '">● ' + timeStr + '</div>';
         });
-        grid.innerHTML += '<div class="cal-day' + tlClass + '" onclick="setTimelineStartDate(\'' + dateStr + '\')"><div class="cal-date-num">' + day + '</div>' + eventsHtml + '</div>';
+        grid.innerHTML += '<div class="cal-day' + tlClass + '" data-date="' + dateStr + '" onclick="setTimelineStartDate(\'' + dateStr + '\')"><div class="cal-date-num">' + day + '</div>' + eventsHtml + '</div>';
     }
 }
 

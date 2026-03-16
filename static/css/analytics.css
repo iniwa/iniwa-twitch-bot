@@ -100,7 +100,7 @@
 
 /* Calendar */
 .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; min-width: 800px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; min-width: 800px; }
 .cal-day-header { text-align: center; font-weight: bold; color: var(--text-secondary); padding: 5px; }
 .cal-day {
   background: var(--bg-tertiary);
@@ -133,6 +133,11 @@
 }
 .cal-event:hover { background: rgba(145,71,255,0.4); }
 .other-month { background: var(--bg-primary); opacity: 0.5; }
+.cal-day.hover-highlight {
+  background: rgba(255, 200, 0, 0.22);
+  border-color: rgba(255, 200, 0, 0.6);
+  outline: 2px solid rgba(255, 200, 0, 0.5);
+}
 
 /* Column widths */
 .col-date     { width: 110px; }
