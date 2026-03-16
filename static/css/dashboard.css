@@ -240,9 +240,9 @@ body.layout-m .pred-new-btn-wrap { display: flex !important; }
   border-radius: 8px;
   margin-bottom: 8px;
 }
-.rule-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.rule-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .rule-body   { margin-bottom: 8px; }
-.rule-footer { display: flex; justify-content: space-between; align-items: center; }
+.rule-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .input-mini  { width: 60px; padding: 4px; }
 .status-active   { color: var(--success); font-weight: bold; font-size: 0.85em; }
 .status-sleep    { color: var(--text-secondary); font-size: 0.85em; }
