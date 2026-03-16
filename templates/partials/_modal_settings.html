@@ -23,43 +23,6 @@
                     <textarea name="ignored_users_list" rows="3">{{ config.get('ignored_users', []) | join('\n') }}</textarea>
                 </div>
             </div>
-            <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
-                <label style="color:var(--text-secondary); font-weight:bold;">🎨 レイアウト設定</label>
-                <div style="display:flex; gap:10px; margin-bottom:10px; margin-top:5px;">
-                    <div style="flex:1;">全体マス数: <input type="number" name="layout_columns" value="{{ config.layout.columns }}" min="1" max="6" style="width:60px; padding:4px;"></div>
-                    <div style="flex:1;">全体最大幅(px): <input type="number" name="layout_max_width" value="{{ config.layout.max_width }}" style="width:80px; padding:4px;"></div>
-                </div>
-                <table class="layout-table">
-                    <thead><tr><th>パネル名</th><th>順番</th><th>横幅(マス)</th><th>縦幅(px)<br><span style="font-size:0.8em; font-weight:normal;">(0=自動)</span></th></tr></thead>
-                    <tbody>
-                        <tr><td>視聴者リスト</td>
-                            <td><input type="number" name="layout_viewers_order" value="{{ config.layout.cards.viewers.order }}"></td>
-                            <td><input type="number" name="layout_viewers_span" value="{{ config.layout.cards.viewers.span }}" min="1"></td>
-                            <td><input type="number" name="layout_viewers_height" value="{{ config.layout.cards.viewers.height }}" min="0"></td>
-                        </tr>
-                        <tr><td>プリセット</td>
-                            <td><input type="number" name="layout_presets_order" value="{{ config.layout.cards.presets.order }}"></td>
-                            <td><input type="number" name="layout_presets_span" value="{{ config.layout.cards.presets.span }}" min="1"></td>
-                            <td><input type="number" name="layout_presets_height" value="{{ config.layout.cards.presets.height }}" min="0"></td>
-                        </tr>
-                        <tr><td>予想 (賭博)</td>
-                            <td><input type="number" name="layout_prediction_order" value="{{ config.layout.cards.prediction.order }}"></td>
-                            <td><input type="number" name="layout_prediction_span" value="{{ config.layout.cards.prediction.span }}" min="1"></td>
-                            <td><input type="number" name="layout_prediction_height" value="{{ config.layout.cards.prediction.height }}" min="0"></td>
-                        </tr>
-                        <tr><td>ルール</td>
-                            <td><input type="number" name="layout_rules_order" value="{{ config.layout.cards.rules.order }}"></td>
-                            <td><input type="number" name="layout_rules_span" value="{{ config.layout.cards.rules.span }}" min="1"></td>
-                            <td><input type="number" name="layout_rules_height" value="{{ config.layout.cards.rules.height }}" min="0"></td>
-                        </tr>
-                        <tr><td>ログ</td>
-                            <td><input type="number" name="layout_logs_order" value="{{ config.layout.cards.logs.order }}"></td>
-                            <td><input type="number" name="layout_logs_span" value="{{ config.layout.cards.logs.span }}" min="1"></td>
-                            <td><input type="number" name="layout_logs_height" value="{{ config.layout.cards.logs.height }}" min="0"></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
             <div style="margin-top:20px; text-align:right;"><button class="btn btn-primary">保存して閉じる</button></div>
         </form>
         <div style="margin-top:15px; padding-top:15px; border-top:1px dashed var(--border);">
@@ -68,7 +31,6 @@
                 <form action="/debug_update_followers" method="post" onsubmit="return confirm('API実行しますか？');" style="flex:1;">
                     <button class="btn btn-info" style="width:100%;">🔄 フォロワー更新</button>
                 </form>
-                <a href="/debug_check" target="_blank" class="btn btn-secondary" style="flex:1; text-align:center; padding-top:8px;">🏥 データ取得診断</a>
                 <form action="/delete_debug_history" method="post" onsubmit="return confirm('デバッグ履歴（ログ・統計・録画）を完全に削除しますか？\nこの操作は取り消せません。');" style="flex:1;">
                     <button class="btn btn-danger" style="width:100%;">🗑️ デバッグ履歴削除</button>
                 </form>

@@ -6,7 +6,7 @@
 body.layout-b #sidebar { display: none; }
 body.layout-b #main-grid {
   display: grid;
-  grid-template-columns: 330px 1fr 280px;
+  grid-template-columns: var(--col-left, 330px) 6px 1fr 6px var(--col-right, 280px);
   height: calc(100vh - 48px);
   overflow: hidden;
   min-width: 800px;
@@ -21,15 +21,14 @@ body.layout-b .card[data-card="viewers"] {
   overflow: hidden;
 }
 body.layout-b #center-group {
-  grid-column: 2;
+  grid-column: 3;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 48px);
   overflow: hidden;
-  border-right: 1px solid var(--border);
 }
 body.layout-b .card[data-card="logs"] {
-  grid-column: 3;
+  grid-column: 5;
   height: calc(100vh - 48px);
   border-radius: 0;
   border-top: none;
@@ -117,6 +116,19 @@ body.layout-m .card[data-card="logs"] {
   border-right: none;
   border-bottom: none;
   overflow: hidden;
+}
+
+/* Monitor-mode prediction card */
+body.layout-m .monitor-prediction-wrap {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  overflow-y: auto;
+  max-height: 40%;
+}
+body.layout-m .monitor-prediction-wrap .card[data-card="predictions"] {
+  border-radius: 0;
+  border: none;
+  height: auto;
 }
 
 /* ---- Monitor Center ---- */
@@ -252,6 +264,19 @@ body.layout-m .card[data-card="logs"] {
 }
 .filter-btn:hover  { color: var(--text-primary); border-color: var(--accent); }
 .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* ---- Resize handles ---- */
+.resize-handle {
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border-left: 2px solid var(--border);
+  transition: border-color 0.2s;
+  flex-shrink: 0;
+  z-index: 10;
+}
+.resize-handle:hover, .resize-handle.dragging { border-color: var(--accent); }
+body.layout-m .resize-handle { display: none; }
 
 /* ---- Preset items ---- */
 .preset-item {

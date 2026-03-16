@@ -70,6 +70,51 @@ function showToast(message, type) {
     }, 3000);
 }
 
+// ============================================================
+// Panel resize (drag handles for layout-b)
+// ============================================================
+function initResize() {
+    var grid = document.getElementById('main-grid');
+    if (!grid) return;
+
+    // Restore saved widths
+    var savedLeft  = localStorage.getItem('col-left');
+    var savedRight = localStorage.getItem('col-right');
+    if (savedLeft)  grid.style.setProperty('--col-left',  savedLeft  + 'px');
+    if (savedRight) grid.style.setProperty('--col-right', savedRight + 'px');
+
+    function makeResizer(handleId, varName, storageKey, getNewWidth) {
+        var handle = document.getElementById(handleId);
+        if (!handle) return;
+        handle.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            handle.classList.add('dragging');
+            var startX = e.clientX;
+            var startWidth = parseInt(
+                getComputedStyle(grid).getPropertyValue(varName) || '0', 10
+            );
+            function onMove(ev) {
+                var newWidth = getNewWidth(startWidth, ev.clientX - startX);
+                newWidth = Math.max(180, Math.min(600, newWidth));
+                grid.style.setProperty(varName, newWidth + 'px');
+                localStorage.setItem(storageKey, newWidth);
+            }
+            function onUp() {
+                handle.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+
+    makeResizer('resize-left',  '--col-left',  'col-left',  function(sw, dx) { return sw + dx; });
+    makeResizer('resize-right', '--col-right', 'col-right', function(sw, dx) { return sw - dx; });
+}
+
+document.addEventListener('DOMContentLoaded', initResize);
+
 // Keyboard: Escape closes modals
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {

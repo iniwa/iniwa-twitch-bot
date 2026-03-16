@@ -230,7 +230,7 @@ def api_status():
         "viewers": get_active_viewers_data(),
         "count": len(c.current_session_viewers),
         "viewer_count": len(c.current_session_viewers),
-        "bot_active": conf.get('is_running', False),
+        "is_live": c.current_stream_id is not None,
         "current_game": c.current_game or '',
         "current_title": conf.get('current_title', ''),
         "rules_status": get_rules_status(),
@@ -258,3 +258,13 @@ def api_current_settings():
             "tweet_tags": current_tweet_tags
         })
     return jsonify({"status": "error"}), 400
+
+
+@bp.route('/api/search_games')
+def api_search_games():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+    conf = c.load_config()
+    from services.twitch_api import search_games
+    return jsonify(search_games(conf, q))

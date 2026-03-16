@@ -11,16 +11,19 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
+    <div class="analytics-page">
+        <div class="analytics-page-header">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; min-width:0;">
+                <a href="/analytics" class="btn btn-back" style="font-size:0.85em; flex-shrink:0;">← 一覧へ戻る</a>
+                <h1 style="margin:0; font-size:1em; font-weight:bold; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    📊 {{ stream_info.title }}
+                    <span style="font-size:0.75em; color:var(--text-secondary); font-weight:normal; margin-left:8px;">({{ stream_info.start_time | format_date }})</span>
+                    {% if stream_info.source == 'api' %}<span class="source-api" style="margin-left:8px;">API取得データ</span>{% endif %}
+                </h1>
+            </div>
+        </div>
+        <div class="analytics-tab-body">
         <div class="card">
-            <h2>
-                <div>📊 {{ stream_info.title }}
-                <span style="font-size:0.6em; color:var(--text-secondary);">({{ stream_info.start_time | format_date }})</span>
-                {% if stream_info.source == 'api' %}<span class="source-api" style="font-size:0.6em; margin-left:10px;">API取得データ</span>{% endif %}
-                </div>
-                <a href="/analytics" class="btn btn-back" style="font-size:0.8em;">← 一覧へ戻る</a>
-            </h2>
-
             {% if not has_log_file %}
                 <div style="padding:20px; text-align:center; color:var(--text-secondary); background:var(--bg-tertiary); border-radius:8px; border:1px solid var(--border);">
                     <p>⚠️ この配信はBot稼働外のため、詳細なログ（グラフ・チャット）はありません。</p>
@@ -93,5 +96,6 @@
             });
         </script>
         {% endif %}
-    </div>
+        </div><!-- /.analytics-tab-body -->
+    </div><!-- /.analytics-page -->
 {% endblock %}

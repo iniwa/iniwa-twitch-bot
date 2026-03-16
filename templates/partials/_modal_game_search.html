@@ -1,0 +1,72 @@
+<div id="gameSearchModal" class="modal" style="z-index: 3000;">
+    <div class="modal-content" style="max-width:420px;">
+        <span class="close" onclick="closeGameSearch()">&times;</span>
+        <h2 style="border:none;">🔍 ゲーム検索</h2>
+        <div class="form-group">
+            <input type="text" id="gameSearchInput" placeholder="ゲーム名を入力..." oninput="debounceGameSearch()" style="width:100%;">
+        </div>
+        <div id="gameSearchResults" style="max-height:300px; overflow-y:auto; margin-top:8px;"></div>
+    </div>
+</div>
+
+<script>
+var _gameSearchTarget = null;
+var _gameSearchTimer = null;
+
+function openGameSearch(targetInputId) {
+    _gameSearchTarget = document.getElementById(targetInputId);
+    document.getElementById('gameSearchInput').value = '';
+    document.getElementById('gameSearchResults').innerHTML = '';
+    toggleModal('gameSearchModal');
+    document.getElementById('gameSearchInput').focus();
+}
+
+function closeGameSearch() {
+    document.getElementById('gameSearchModal').style.display = 'none';
+}
+
+function debounceGameSearch() {
+    clearTimeout(_gameSearchTimer);
+    _gameSearchTimer = setTimeout(runGameSearch, 350);
+}
+
+function runGameSearch() {
+    var q = document.getElementById('gameSearchInput').value.trim();
+    var resultsEl = document.getElementById('gameSearchResults');
+    if (!q) { resultsEl.innerHTML = ''; return; }
+    resultsEl.innerHTML = '<div style="color:var(--text-secondary); padding:8px;">検索中...</div>';
+    fetch('/api/search_games?q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.length) {
+                resultsEl.innerHTML = '<div style="color:var(--text-secondary); padding:8px;">結果なし</div>';
+                return;
+            }
+            resultsEl.innerHTML = data.map(function(g) {
+                return '<div class="game-search-item" onclick="selectGame(' + JSON.stringify(g.name) + ')" style="display:flex; align-items:center; gap:10px; padding:8px; cursor:pointer; border-radius:4px; border-bottom:1px solid var(--border);">'
+                    + (g.box_art_url ? '<img src="' + g.box_art_url.replace('{width}', '40').replace('{height}', '55') + '" style="width:30px; border-radius:3px;" loading="lazy">' : '')
+                    + '<span style="color:var(--text-primary);">' + g.name + '</span>'
+                    + '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            resultsEl.innerHTML = '<div style="color:var(--warning); padding:8px;">エラーが発生しました</div>';
+        });
+}
+
+function selectGame(name) {
+    if (_gameSearchTarget) _gameSearchTarget.value = name;
+    closeGameSearch();
+}
+
+document.getElementById('gameSearchModal').addEventListener('click', function(e) {
+    if (e.target === this) closeGameSearch();
+});
+
+document.querySelectorAll('.game-search-item').forEach && document.addEventListener('mouseover', function(e) {
+    if (e.target.closest('.game-search-item')) e.target.closest('.game-search-item').style.background = 'var(--bg-tertiary)';
+});
+document.addEventListener('mouseout', function(e) {
+    if (e.target.closest && e.target.closest('.game-search-item')) e.target.closest('.game-search-item').style.background = '';
+});
+</script>

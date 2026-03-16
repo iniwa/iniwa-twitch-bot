@@ -103,7 +103,8 @@ def irc_worker(stats_lock, current_minute_stats):
                             if uid:
                                 with c.file_lock:
                                     db = c.load_viewers()
-                                    if uid not in db:
+                                    is_new_user = uid not in db
+                                    if is_new_user:
                                         db[uid] = {
                                             "name": display_name,
                                             "login": display_name.lower(),
@@ -115,6 +116,9 @@ def irc_worker(stats_lock, current_minute_stats):
                                     ud["is_sub"] = is_sub
                                     ud["last_seen_ts"] = int(time.time())
                                     c.save_viewers(db)
+                                if is_new_user and conf.get('enable_welcome') and c.current_stream_id:
+                                    welcome = f"@{display_name} ようこそ！初コメありがとう！"
+                                    s.send(f"PRIVMSG #{nick} :{welcome}\r\n".encode())
                         except (ValueError, IndexError, KeyError):
                             pass
 

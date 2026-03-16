@@ -140,6 +140,18 @@ def get_game_id(conf, game_name):
     return None
 
 
+def search_games(conf, query):
+    r = requests.get(
+        "https://api.twitch.tv/helix/search/categories",
+        headers=get_headers(conf),
+        params={"query": query, "first": 10},
+        timeout=5
+    )
+    if r.status_code == 200:
+        return r.json().get('data', [])
+    return []
+
+
 def update_channel_info(conf, game_name, title, tags=None):
     try:
         game_id = get_game_id(conf, game_name)

@@ -5,7 +5,7 @@
         <form action="/update_preset" method="post">
             <input type="hidden" id="edit_preset_index" name="preset_index">
             <div class="form-group"><label>プリセット名</label><input type="text" id="edit_preset_name" name="name" required></div>
-            <div class="form-group"><label>ゲームカテゴリー</label><input type="text" id="edit_preset_game" name="game" list="existing_games" required></div>
+            <div class="form-group"><label>ゲームカテゴリー</label><div style="display:flex; gap:5px;"><input type="text" id="edit_preset_game" name="game" list="existing_games" required style="flex:1;"><button type="button" class="btn btn-secondary" onclick="openGameSearch('edit_preset_game')" title="Twitchで検索">🔍</button></div></div>
             <div class="form-group"><label>タグ (カンマ区切り)</label><input type="text" id="edit_preset_tags" name="tags" placeholder="FPS, 参加型, 初心者歓迎"></div>
             <div class="form-group"><label>ツイート用タグ</label><input type="text" id="edit_preset_tweet_tags" name="tweet_tags" placeholder="#Twitch #配信 #FPS"></div>
             <div class="form-group"><label>配信タイトル</label><input type="text" id="edit_preset_title" name="title" required></div>

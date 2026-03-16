@@ -156,6 +156,8 @@
 
     {% include "partials/_viewer_card.html" %}
 
+    <div class="resize-handle" id="resize-left"></div>
+
     <div id="center-group">
         <div id="center-tabs">
             <button data-tab="presets"     onclick="switchCenterTab('presets')">📂 プリセット</button>
@@ -167,7 +169,12 @@
         {% include "partials/_prediction_card.html" %}
     </div>
 
+    <div class="resize-handle" id="resize-right"></div>
+
     <div id="monitor-center">
+        <div class="monitor-prediction-wrap">
+            {% include "partials/_prediction_card.html" %}
+        </div>
         <div id="monitor-header">
             <div id="monitor-title">📡 配信モニター</div>
             <div id="monitor-stats">
@@ -219,6 +226,7 @@
 </div>
 
 {% include "partials/_modal_add_rule.html" %}
+{% include "partials/_modal_game_search.html" %}
 {% include "partials/_modal_settings.html" %}
 {% include "partials/_modal_edit_preset.html" %}
 {% include "partials/_modal_edit_prediction.html" %}

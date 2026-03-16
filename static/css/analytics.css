@@ -1,28 +1,57 @@
-/* Analytics layout */
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-.analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+/* Analytics page layout */
+.analytics-page { width: 100%; padding: 0; display: flex; flex-direction: column; height: 100%; }
 
-/* Tab navigation */
-.tab-menu {
+.analytics-page-header {
   display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.analytics-page-header h1 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+.analytics-page-header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tab navigation — matches dashboard underline style */
+.analytics-tab-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
 }
 .tab-btn {
   padding: 10px 20px;
   border: none;
-  background: var(--bg-tertiary);
-  cursor: pointer;
-  border-radius: 5px;
-  font-weight: bold;
+  background: transparent;
   color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  border-bottom: 2px solid transparent;
   transition: 0.2s;
 }
-.tab-btn.active { background: var(--accent); color: white; }
+.tab-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Tab content */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
+
+.analytics-tab-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+/* Analytics grid */
+.analytics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
 
 /* Chart controls */
 .chart-controls {
@@ -46,7 +75,7 @@
   font-size: 0.9em;
   transition: 0.2s;
 }
-.range-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.range-btn.active { background: var(--accent); color: var(--text-primary); border-color: var(--accent); }
 .date-input {
   padding: 5px;
   border: 1px solid var(--border);
@@ -81,7 +110,7 @@
   position: relative;
   border-radius: 4px;
 }
-.cal-day:hover { background: #2a2a30; }
+.cal-day:hover { background: var(--bg-primary); }
 .cal-date-num  { font-size: 0.9em; font-weight: bold; color: var(--text-primary); margin-bottom: 5px; }
 .cal-event {
   background: rgba(145,71,255,0.25);
@@ -176,4 +205,6 @@
 @media (max-width: 900px) {
   .analytics-grid { grid-template-columns: 1fr; }
   .calendar-grid  { overflow-x: auto; }
+  .analytics-tab-nav { flex-wrap: wrap; }
+  .tab-btn { padding: 8px 14px; font-size: 0.85em; }
 }

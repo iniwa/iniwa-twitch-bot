@@ -12,25 +12,30 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        <div class="tab-menu">
+    <div class="analytics-page">
+        <div class="analytics-page-header">
+            <h1>📈 アナリティクス</h1>
+            <div class="analytics-page-header-actions">
+                <form action="/force_sync_history" method="post" onsubmit="return confirm('Twitch APIから最新情報を取得し、タイトルや時間を更新します。\n(ゲーム名は現在の設定を維持します)\nよろしいですか？');">
+                    <button class="btn btn-primary" style="font-size:0.85em;">🔄 API更新</button>
+                </form>
+                <form action="/download_all_vods" method="post" onsubmit="return confirm('未保存のアーカイブを全てダウンロードしますか？時間がかかります。');">
+                    <button class="btn btn-bulk" style="font-size:0.85em;">📥 一括ダウンロード</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="analytics-tab-nav">
             <button id="btn-list" class="tab-btn active" onclick="switchTab('list')">📄 一覧</button>
             <button id="btn-calendar" class="tab-btn" onclick="switchTab('calendar')">📅 カレンダー</button>
             <button id="btn-trends" class="tab-btn" onclick="switchTab('trends')">📊 推移・分析</button>
         </div>
 
+        <div class="analytics-tab-body">
+
         <div id="list" class="tab-content active">
             <div class="card">
-                <h2><div>📺 過去の配信一覧</div>
-                    <div style="display:flex; gap:10px;">
-                        <form action="/force_sync_history" method="post" onsubmit="return confirm('Twitch APIから最新情報を取得し、タイトルや時間を更新します。\n(ゲーム名は現在の設定を維持します)\nよろしいですか？');">
-                            <button class="btn btn-primary" style="font-size:0.8em; background-color: #007bff; border-color: #007bff; opacity: 1;">🔄 情報更新 (API)</button>
-                        </form>
-                        <form action="/download_all_vods" method="post" onsubmit="return confirm('未保存のアーカイブを全てダウンロードしますか？時間がかかります。');">
-                            <button class="btn btn-bulk">📥 一括ダウンロード (未保存のみ)</button>
-                        </form>
-                    </div>
-                </h2>
+                <h2>📺 過去の配信一覧</h2>
 
                 <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="タイトルやゲーム名で検索..." class="search-box">
 
@@ -108,9 +113,9 @@
             <div class="analytics-grid">
                 <div class="card">
                     <div class="calendar-header">
-                        <button class="btn btn-secondary" style="font-weight:bold; color:white;" onclick="changeMonth(-1)">◀ 前月</button>
+                        <button class="btn btn-secondary" style="font-weight:bold; color:var(--text-primary);" onclick="changeMonth(-1)">◀ 前月</button>
                         <h2 id="calendarTitle" style="border:none; margin:0;">2026年 1月</h2>
-                        <button class="btn btn-secondary" style="font-weight:bold; color:white;" onclick="changeMonth(1)">翌月 ▶</button>
+                        <button class="btn btn-secondary" style="font-weight:bold; color:var(--text-primary);" onclick="changeMonth(1)">翌月 ▶</button>
                     </div>
                     <div style="overflow-x:auto;">
                         <div id="calendarGrid" class="calendar-grid"></div>
@@ -118,7 +123,7 @@
                 </div>
 
                 <div class="card">
-                    <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:5px;">📅 今月の配信リスト</h3>
+                    <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:5px;">📅 今月の配信リスト</h3>
                     <div style="overflow-y:auto; max-height:400px;">
                         <table>
                             <thead><tr><th>日時</th><th>タイトル</th><th>ゲーム</th><th>時間</th></tr></thead>
@@ -127,8 +132,6 @@
                     </div>
                 </div>
             </div>
-
-            <hr style="margin: 30px 0; border:0; border-top:1px dashed var(--border);">
 
             <div class="analytics-grid">
                 <div class="card">
@@ -147,7 +150,7 @@
                 </div>
 
                 <div class="card">
-                    <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:5px;">📑 週間の配信リスト</h3>
+                    <h3 style="margin-top:0; border-bottom:1px solid var(--border); padding-bottom:5px;">📑 週間の配信リスト</h3>
                     <div style="overflow-y:auto; max-height:300px;">
                         <table>
                             <thead><tr><th>日時</th><th>タイトル</th><th>ゲーム</th><th>時間</th></tr></thead>
@@ -217,12 +220,14 @@
                 </div>
             </div>
         </div>
+
+        </div><!-- /.analytics-tab-body -->
     </div>
 
     <div id="editStreamModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeEditStreamModal()">&times;</span>
-            <h2 style="border:none;">✏️ 配信情報の編集</h2>
+            <h2>✏️ 配信情報の編集</h2>
             <form action="/update_stream_info" method="post">
                 <input type="hidden" id="edit_stream_id" name="stream_id">
                 <div class="form-group">

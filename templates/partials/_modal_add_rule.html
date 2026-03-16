@@ -9,7 +9,10 @@
             </div>
             <div class="form-group">
                 <label>ゲーム</label>
-                <input type="text" name="game" list="existing_games" value="All" required>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="addRuleGameInput" name="game" list="existing_games" value="All" required style="flex:1;">
+                    <button type="button" class="btn btn-secondary" onclick="openGameSearch('addRuleGameInput')" title="Twitchで検索">🔍</button>
+                </div>
             </div>
             <div class="form-group">
                 <label>メッセージ</label>

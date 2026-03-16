@@ -207,6 +207,7 @@ def viewer_worker_loop(conf):
                     c.current_session_viewers.clear()
                     c.current_stream_id = None
                     c.current_game = None
+                    c.state.reset()
                 time.sleep(20)
                 continue
 

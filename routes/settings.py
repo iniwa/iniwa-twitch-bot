@@ -1,6 +1,5 @@
-from flask import Blueprint, request, redirect, url_for, render_template
+from flask import Blueprint, request, redirect, url_for
 import config as c
-from services.workers import get_debug_status
 from services.storage import delete_history_data
 from services.twitch_api import force_update_followers
 
@@ -34,32 +33,8 @@ def save_config_route():
         if x.strip()
     ]
 
-    if 'layout' not in conf:
-        conf['layout'] = {"cards": {}}
-    try:
-        conf['layout']['columns'] = int(request.form.get('layout_columns', 2))
-        conf['layout']['max_width'] = int(request.form.get('layout_max_width', 1400))
-
-        card_keys = ['viewers', 'presets', 'prediction', 'rules', 'logs']
-        for key in card_keys:
-            if key not in conf['layout']['cards']:
-                conf['layout']['cards'][key] = {}
-            conf['layout']['cards'][key]['span'] = int(request.form.get(f'layout_{key}_span', 1))
-            h_val = request.form.get(f'layout_{key}_height', 0)
-            conf['layout']['cards'][key]['height'] = int(h_val) if h_val else 0
-            order_val = request.form.get(f'layout_{key}_order', 0)
-            conf['layout']['cards'][key]['order'] = int(order_val) if order_val else 0
-    except (ValueError, TypeError) as e:
-        c.log(f"⚠️ レイアウト設定の保存に失敗: {e}")
-
     c.save_config(conf)
     return redirect(url_for('dashboard.index'))
-
-
-@bp.route('/debug_check')
-def debug_check():
-    status = get_debug_status()
-    return render_template('debug.html', status=status)
 
 
 @bp.route('/debug_update_followers', methods=['POST'])

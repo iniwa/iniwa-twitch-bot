@@ -77,8 +77,8 @@ function updateTopBar(data) {
     if (gameEl)   gameEl.textContent   = data.current_game || '';
     if (viewerEl) viewerEl.textContent = '\uD83D\uDC41 ' + (data.viewer_count || data.count || 0);
     if (badge) {
-        badge.textContent = data.bot_active ? '\u25CFLIVE' : '\u25CFOFF';
-        badge.className   = data.bot_active ? 'live-on' : 'live-off';
+        badge.textContent = data.is_live ? '\u25CFLIVE' : '\u25CFOFF';
+        badge.className   = data.is_live ? 'live-on' : 'live-off';
     }
 }
 
