@@ -50,16 +50,32 @@ function runGameSearch() {
                 resultsEl.innerHTML = '<div style="color:var(--text-secondary); padding:8px;">結果なし</div>';
                 return;
             }
-            resultsEl.innerHTML = data.map(function(g) {
-                var img = g.box_art_url
-                    ? '<img src="' + g.box_art_url.replace('{width}', '40').replace('{height}', '55') + '" style="width:30px; height:41px; border-radius:3px; object-fit:cover;" loading="lazy">'
-                    : '<div style="width:30px; height:41px; background:var(--bg-tertiary); border-radius:3px;"></div>';
-                return '<div class="game-search-item" onclick="selectGame(' + JSON.stringify(g.name) + ')" '
-                    + 'style="display:flex; align-items:center; gap:10px; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--border);">'
-                    + img
-                    + '<span style="color:var(--text-primary); font-size:0.9em;">' + g.name + '</span>'
-                    + '</div>';
-            }).join('');
+            var fragment = document.createDocumentFragment();
+            data.forEach(function(g) {
+                var div = document.createElement('div');
+                div.className = 'game-search-item';
+                div.style.cssText = 'display:flex; align-items:center; gap:10px; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--border);';
+                div.dataset.name = g.name;
+                div.addEventListener('click', function() { selectGame(this.dataset.name); });
+                if (g.box_art_url) {
+                    var img = document.createElement('img');
+                    img.src = g.box_art_url.replace('{width}', '40').replace('{height}', '55');
+                    img.style.cssText = 'width:30px; height:41px; border-radius:3px; object-fit:cover;';
+                    img.loading = 'lazy';
+                    div.appendChild(img);
+                } else {
+                    var placeholder = document.createElement('div');
+                    placeholder.style.cssText = 'width:30px; height:41px; background:var(--bg-tertiary); border-radius:3px; flex-shrink:0;';
+                    div.appendChild(placeholder);
+                }
+                var span = document.createElement('span');
+                span.style.cssText = 'color:var(--text-primary); font-size:0.9em;';
+                span.textContent = g.name;
+                div.appendChild(span);
+                fragment.appendChild(div);
+            });
+            resultsEl.innerHTML = '';
+            resultsEl.appendChild(fragment);
         })
         .catch(function(err) {
             console.error('Game search error:', err);

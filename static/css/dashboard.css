@@ -89,7 +89,6 @@ body.layout-m #main-grid {
   overflow: hidden;
   min-width: 800px;
 }
-body.layout-m .resize-handle { display: block; }
 body.layout-m .card[data-card="viewers"] {
   grid-column: 1;
   height: calc(100vh - 48px);
@@ -99,7 +98,9 @@ body.layout-m .card[data-card="viewers"] {
   border-bottom: none;
   overflow: hidden;
 }
+body.layout-m #resize-left  { grid-column: 2; display: block; }
 body.layout-m #center-group { display: none; }
+body.layout-m #resize-right { grid-column: 4; display: block; }
 body.layout-m #monitor-center {
   grid-column: 3;
   height: calc(100vh - 48px);
