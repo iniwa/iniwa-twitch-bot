@@ -48,8 +48,8 @@ function setRange(rangeType) {
     }
 
     if (rangeType !== 'CUSTOM') {
-        document.getElementById('start-date').value = startDate.getFullYear() + '-' + String(startDate.getMonth()+1).padStart(2,'0') + '-' + String(startDate.getDate()).padStart(2,'0');
-        document.getElementById('end-date').value = endDate.getFullYear() + '-' + String(endDate.getMonth()+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+        document.getElementById('start-date').value = formatDateForInput(startDate);
+        document.getElementById('end-date').value = formatDateForInput(endDate);
     }
     updateTrendChart(startDate, endDate);
 }
@@ -297,6 +297,28 @@ function renderWeeklyTimeline() {
     });
 }
 
+// Helper: format Date for input[type=date]
+function formatDateForInput(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// Zoom/Pan callback: sync summary, list, and date pickers with visible chart range
+function onChartRangeChange(ctx) {
+    var xScale = ctx.chart.scales.x;
+    var visibleMin = new Date(xScale.min);
+    var visibleMax = new Date(xScale.max);
+    var filtered = allStreams.filter(function(s) {
+        var d = new Date(s.start_time);
+        return d >= visibleMin && d <= visibleMax;
+    }).sort(function(a, b) { return new Date(a.start_time) - new Date(b.start_time); });
+    calculateAndShowStats(filtered);
+    currentFilteredData = filtered.slice().reverse();
+    currentPage = 1;
+    renderFilteredList();
+    document.getElementById('start-date').value = formatDateForInput(visibleMin);
+    document.getElementById('end-date').value = formatDateForInput(visibleMax);
+}
+
 // Trend chart
 function renderChart(data, minDate, maxDate) {
     var ctx = document.getElementById('trendChartCanvas').getContext('2d');
@@ -323,7 +345,7 @@ function renderChart(data, minDate, maxDate) {
             ]
         },
         options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false, animation: false,
             scales: {
                 x: { type: 'time', time: { unit: 'day', tooltipFormat: 'yyyy/MM/dd HH:mm' }, min: minDate.toISOString(), max: maxDate.toISOString(), title: { display: true, text: '日付' } },
                 y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: { display: true, text: '同接 (人)' } },
@@ -344,12 +366,14 @@ function renderChart(data, minDate, maxDate) {
                     pan: {
                         enabled: true,
                         mode: 'x',
-                        modifierKey: null
+                        modifierKey: null,
+                        onPanComplete: onChartRangeChange
                     },
                     zoom: {
                         wheel: { enabled: true },
                         pinch: { enabled: true },
-                        mode: 'x'
+                        mode: 'x',
+                        onZoomComplete: onChartRangeChange
                     }
                 }
             }
