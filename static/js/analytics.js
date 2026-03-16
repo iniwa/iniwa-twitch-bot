@@ -189,14 +189,56 @@ function renderMonthlyList(data) {
     }).join('');
 }
 
+// Weekly list renderer with calendar hover highlight
+function renderWeeklyList(data) {
+    var tbody = document.getElementById('weekly-list-tbody');
+    if (!tbody) return;
+    var sorted = data.slice().sort(function(a, b) { return new Date(b.start_time) - new Date(a.start_time); });
+    if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
+        return;
+    }
+    tbody.innerHTML = sorted.map(function(s) {
+        var utcDate = new Date(s.start_time);
+        var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
+        var dateStr = jstDate.toISOString().substring(0, 10);
+        return '<tr data-date="' + dateStr + '" onmouseenter="highlightCalDay(\'' + dateStr + '\')" onmouseleave="unhighlightCalDay(\'' + dateStr + '\')">' +
+            '<td style="width:120px;">' + s.start_time.substring(5, 16).replace('T', ' ') + '</td>' +
+            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + s.title + '</a></td>' +
+            '<td>' + s.game_name + '</td><td style="width:80px;">' + (s.duration_short || '-') + '</td></tr>';
+    }).join('');
+}
+
 function highlightCalDay(dateStr) {
     var el = document.querySelector('.cal-day[data-date="' + dateStr + '"]');
     if (el) el.classList.add('hover-highlight');
+    _updateTimelineBarColor(dateStr, 'rgba(255, 200, 0, 0.7)', 'rgba(255, 200, 0, 1)');
 }
 
 function unhighlightCalDay(dateStr) {
     var el = document.querySelector('.cal-day[data-date="' + dateStr + '"]');
     if (el) el.classList.remove('hover-highlight');
+    _updateTimelineBarColor(dateStr, 'rgba(100, 65, 165, 0.6)', 'rgba(100, 65, 165, 1)');
+}
+
+function _updateTimelineBarColor(dateStr, bgColor, bdColor) {
+    if (!timelineChart) return;
+    var d = new Date(dateStr);
+    var label = (d.getMonth() + 1) + '/' + d.getDate();
+    var dataset = timelineChart.data.datasets[0];
+    var data = dataset.data;
+    // 単一色の場合は配列に展開
+    if (!Array.isArray(dataset.backgroundColor)) {
+        dataset.backgroundColor = data.map(function() { return 'rgba(100, 65, 165, 0.6)'; });
+        dataset.borderColor     = data.map(function() { return 'rgba(100, 65, 165, 1)'; });
+    }
+    data.forEach(function(item, i) {
+        if (item.y === label) {
+            dataset.backgroundColor[i] = bgColor;
+            dataset.borderColor[i]     = bdColor;
+        }
+    });
+    timelineChart.update('none');
 }
 
 // Set timeline start date from calendar click
@@ -300,7 +342,7 @@ function renderWeeklyTimeline() {
         var d = new Date(s.start_time);
         return d >= startDate && d <= endDate;
     });
-    renderSimpleList(weeklyData, 'weekly-list-tbody');
+    renderWeeklyList(weeklyData);
 
     var labels = [];
     for (var i = 0; i < 7; i++) {
