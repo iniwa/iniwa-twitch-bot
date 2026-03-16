@@ -173,7 +173,7 @@ function renderSimpleList(data, elementId) {
 function renderMonthlyList(data) {
     var tbody = document.getElementById('monthly-list-tbody');
     if (!tbody) return;
-    var sorted = data.slice().sort(function(a, b) { return new Date(b.start_time) - new Date(a.start_time); });
+    var sorted = data.slice().sort(function(a, b) { return new Date(a.start_time) - new Date(b.start_time); });
     if (sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
         return;
@@ -193,7 +193,7 @@ function renderMonthlyList(data) {
 function renderWeeklyList(data) {
     var tbody = document.getElementById('weekly-list-tbody');
     if (!tbody) return;
-    var sorted = data.slice().sort(function(a, b) { return new Date(b.start_time) - new Date(a.start_time); });
+    var sorted = data.slice().sort(function(a, b) { return new Date(a.start_time) - new Date(b.start_time); });
     if (sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
         return;
@@ -388,7 +388,10 @@ function renderWeeklyTimeline() {
                 x: { min: 0, max: 24, title: { display: true, text: '時間 (0-24)' }, ticks: { stepSize: 1 } },
                 y: { title: { display: true, text: '日付' } }
             },
-            plugins: { tooltip: { callbacks: { label: function(ctx) { return ctx.raw.title || ''; } } } }
+            plugins: {
+                legend: { labels: { generateLabels: function() { return [{ text: '配信時間帯', fillStyle: 'rgba(100, 65, 165, 0.6)', strokeStyle: 'rgba(100, 65, 165, 1)', lineWidth: 1 }]; } } },
+                tooltip: { callbacks: { label: function(ctx) { return ctx.raw.title || ''; } } }
+            }
         }
     });
 }
