@@ -150,6 +150,37 @@
 .stat-val   { font-size: 1.5em; font-weight: bold; color: var(--accent); }
 .stat-label { font-size: 0.85em; color: var(--text-secondary); margin-top: 5px; }
 .chart-container { position: relative; height: 350px; width: 100%; }
+.yaxis-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.85em;
+}
+.yaxis-label { color: var(--text-secondary); white-space: nowrap; }
+.yaxis-group { display: flex; align-items: center; gap: 5px; }
+.yaxis-tag {
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.yaxis-sep { color: var(--text-secondary); }
+.yaxis-input {
+  width: 80px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9em;
+}
 
 /* Chat log */
 .chat-log {

@@ -7,6 +7,7 @@ var currentFilteredData = [];
 var timelineEndDate = new Date();
 var currentYear = new Date().getFullYear();
 var currentMonth = new Date().getMonth();
+var yAxisRanges = { y: {}, y1: {}, y2: {} };
 var monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 
 // Tab switching
@@ -319,6 +320,41 @@ function onChartRangeChange(ctx) {
     document.getElementById('end-date').value = formatDateForInput(visibleMax);
 }
 
+// Sync y-axis range inputs with yAxisRanges state
+function syncYAxisInputs() {
+    ['y', 'y1', 'y2'].forEach(function(axisId) {
+        var minEl = document.getElementById(axisId + '-min');
+        var maxEl = document.getElementById(axisId + '-max');
+        if (minEl) minEl.value = yAxisRanges[axisId].min !== undefined ? yAxisRanges[axisId].min : '';
+        if (maxEl) maxEl.value = yAxisRanges[axisId].max !== undefined ? yAxisRanges[axisId].max : '';
+    });
+}
+
+// Update a single y-axis range from input, persist across redraws
+function updateYAxis(axisId, field, value) {
+    var val = value === '' ? undefined : parseFloat(value);
+    if (!isNaN(val) || val === undefined) {
+        yAxisRanges[axisId][field] = val;
+    }
+    if (trendChart) {
+        trendChart.options.scales[axisId][field] = val;
+        trendChart.update('none');
+    }
+}
+
+// Reset y-axis ranges to auto-calculated values and redraw
+function resetYAxisRanges() {
+    yAxisRanges = { y: {}, y1: {}, y2: {} };
+    var s = document.getElementById('start-date').value;
+    var e = document.getElementById('end-date').value;
+    if (s && e) {
+        var sd = new Date(s);
+        var ed = new Date(e);
+        ed.setHours(23, 59, 59);
+        updateTrendChart(sd, ed);
+    }
+}
+
 // Trend chart
 function renderChart(data, minDate, maxDate) {
     var ctx = document.getElementById('trendChartCanvas').getContext('2d');
@@ -334,6 +370,23 @@ function renderChart(data, minDate, maxDate) {
         return { x: s.start_time, y: val };
     });
 
+    // Initialize y-axis ranges from all data on first render
+    if (yAxisRanges.y.max === undefined) {
+        var maxV = Math.max.apply(null, allStreams.map(function(s) { return s.max_viewers || 0; }).concat([0]));
+        yAxisRanges.y = { min: 0, max: Math.ceil(maxV * 1.15) || 100 };
+    }
+    if (yAxisRanges.y1.max === undefined && followerHistory && followerHistory.length > 0) {
+        var fVals = followerHistory.map(function(f) { return f.y || 0; });
+        var minF = Math.min.apply(null, fVals);
+        var maxF = Math.max.apply(null, fVals);
+        var padF = Math.max((maxF - minF) * 0.1, maxF * 0.05, 100);
+        yAxisRanges.y1 = { min: Math.max(0, Math.floor(minF - padF)), max: Math.ceil(maxF + padF) };
+    }
+    if (yAxisRanges.y2.max === undefined) {
+        var maxD = Math.max.apply(null, pointsDurations.map(function(p) { return p.y || 0; }).concat([0]));
+        yAxisRanges.y2 = { min: 0, max: Math.ceil(maxD * 1.15) || 300 };
+    }
+
     if (trendChart) { trendChart.destroy(); }
     trendChart = new Chart(ctx, {
         type: 'line',
@@ -348,9 +401,9 @@ function renderChart(data, minDate, maxDate) {
             responsive: true, maintainAspectRatio: false, animation: false,
             scales: {
                 x: { type: 'time', time: { unit: 'day', tooltipFormat: 'yyyy/MM/dd HH:mm' }, min: minDate.toISOString(), max: maxDate.toISOString(), title: { display: true, text: '日付' } },
-                y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: { display: true, text: '同接 (人)' } },
-                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'フォロワー (人)' } },
-                y2: { type: 'linear', display: false, position: 'right', grid: { drawOnChartArea: false }, min: 0 }
+                y:  { type: 'linear', display: true,  position: 'left',  min: yAxisRanges.y.min,  max: yAxisRanges.y.max,  title: { display: true, text: '同接 (人)' } },
+                y1: { type: 'linear', display: true,  position: 'right', min: yAxisRanges.y1.min, max: yAxisRanges.y1.max, grid: { drawOnChartArea: false }, title: { display: true, text: 'フォロワー (人)' } },
+                y2: { type: 'linear', display: false, position: 'right', min: yAxisRanges.y2.min, max: yAxisRanges.y2.max, grid: { drawOnChartArea: false } }
             },
             plugins: {
                 tooltip: {
@@ -379,6 +432,7 @@ function renderChart(data, minDate, maxDate) {
             }
         }
     });
+    syncYAxisInputs();
 }
 
 // Pagination

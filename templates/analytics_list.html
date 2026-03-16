@@ -180,6 +180,28 @@
                 <div class="chart-container">
                     <canvas id="trendChartCanvas"></canvas>
                 </div>
+                <div class="yaxis-controls">
+                    <span class="yaxis-label">縦軸の範囲:</span>
+                    <span class="yaxis-group">
+                        <span class="yaxis-tag" style="background:#6441a5;">同接</span>
+                        <input type="number" id="y-min" placeholder="最小" class="yaxis-input" onchange="updateYAxis('y','min',this.value)">
+                        <span class="yaxis-sep">〜</span>
+                        <input type="number" id="y-max" placeholder="最大" class="yaxis-input" onchange="updateYAxis('y','max',this.value)">
+                    </span>
+                    <span class="yaxis-group">
+                        <span class="yaxis-tag" style="background:#e91e63;">フォロワー</span>
+                        <input type="number" id="y1-min" placeholder="最小" class="yaxis-input" onchange="updateYAxis('y1','min',this.value)">
+                        <span class="yaxis-sep">〜</span>
+                        <input type="number" id="y1-max" placeholder="最大" class="yaxis-input" onchange="updateYAxis('y1','max',this.value)">
+                    </span>
+                    <span class="yaxis-group">
+                        <span class="yaxis-tag" style="background:#009688;">配信時間(分)</span>
+                        <input type="number" id="y2-min" placeholder="最小" class="yaxis-input" onchange="updateYAxis('y2','min',this.value)">
+                        <span class="yaxis-sep">〜</span>
+                        <input type="number" id="y2-max" placeholder="最大" class="yaxis-input" onchange="updateYAxis('y2','max',this.value)">
+                    </span>
+                    <button class="range-btn" onclick="resetYAxisRanges()">↺ リセット</button>
+                </div>
             </div>
 
             <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
