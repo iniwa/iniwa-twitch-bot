@@ -46,6 +46,11 @@ function setRange(rangeType) {
         if (e) endDate = new Date(e);
         endDate.setHours(23, 59, 59);
     }
+
+    if (rangeType !== 'CUSTOM') {
+        document.getElementById('start-date').value = startDate.getFullYear() + '-' + String(startDate.getMonth()+1).padStart(2,'0') + '-' + String(startDate.getDate()).padStart(2,'0');
+        document.getElementById('end-date').value = endDate.getFullYear() + '-' + String(endDate.getMonth()+1).padStart(2,'0') + '-' + String(endDate.getDate()).padStart(2,'0');
+    }
     updateTrendChart(startDate, endDate);
 }
 
@@ -334,6 +339,18 @@ function renderChart(data, minDate, maxDate) {
                             return [];
                         }
                     }
+                },
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: null
+                    },
+                    zoom: {
+                        wheel: { enabled: true },
+                        pinch: { enabled: true },
+                        mode: 'x'
+                    }
                 }
             }
         }
@@ -413,3 +430,12 @@ function openEditStreamModal(sid, title, game) {
 function closeEditStreamModal() {
     document.getElementById('editStreamModal').style.display = 'none';
 }
+
+// 初期化: タイムライン日付ピッカーにtodayをセット
+(function() {
+    var picker = document.getElementById('timelinePicker');
+    if (picker) {
+        var d = timelineEndDate;
+        picker.value = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+})();

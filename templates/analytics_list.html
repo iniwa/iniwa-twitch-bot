@@ -9,6 +9,8 @@
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
 {% endblock %}
 
 {% block content %}
@@ -169,6 +171,7 @@
                     <button class="range-btn" id="btn-range-1M" onclick="setRange('1M')">最近1ヶ月</button>
                     <button class="range-btn" id="btn-range-1Y" onclick="setRange('1Y')">最近1年</button>
                     <button class="range-btn" id="btn-range-ALL" onclick="setRange('ALL')">全期間</button>
+                    <button class="range-btn" onclick="if(trendChart) trendChart.resetZoom()">🔍 リセット</button>
                     <span style="margin:0 10px; color:var(--border);">|</span>
                     <input type="date" id="start-date" class="date-input" onchange="setRange('CUSTOM')">
                     <span style="font-weight:bold;">~</span>
