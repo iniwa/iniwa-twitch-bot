@@ -322,8 +322,8 @@ function onChartRangeChange(ctx) {
 // Trend chart
 function renderChart(data, minDate, maxDate) {
     var ctx = document.getElementById('trendChartCanvas').getContext('2d');
-    var pointsViewers = data.map(function(s) { return { x: s.start_time, y: s.max_viewers, title: s.title, game: s.game_name }; });
-    var pointsDurations = data.map(function(s) {
+    var pointsViewers = allStreams.map(function(s) { return { x: s.start_time, y: s.max_viewers, title: s.title, game: s.game_name }; });
+    var pointsDurations = allStreams.map(function(s) {
         if (!s.duration || typeof s.duration !== 'string') return { x: s.start_time, y: 0 };
         var parts = s.duration.match(/(\d+)h\s*(\d+)m/) || s.duration.match(/(\d+)m/);
         var val = 0;
