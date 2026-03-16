@@ -241,7 +241,7 @@ function renderCalendar(year, month) {
 
 // Weekly timeline
 function changeTimelineDate(val) {
-    if (val) { timelineEndDate = new Date(val); renderWeeklyTimeline(); }
+    if (val) { timelineEndDate = new Date(val); renderWeeklyTimeline(); renderCalendar(currentYear, currentMonth); }
 }
 
 function moveTimeline(days) {
@@ -255,6 +255,7 @@ function moveTimeline(days) {
         picker.value = y + '-' + m + '-' + d;
     }
     renderWeeklyTimeline();
+    renderCalendar(currentYear, currentMonth);
 }
 
 function renderWeeklyTimeline() {
