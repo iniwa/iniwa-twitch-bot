@@ -91,6 +91,7 @@ body.layout-m #main-grid {
 }
 body.layout-m .card[data-card="viewers"] {
   grid-column: 1;
+  grid-row: 1;
   height: calc(100vh - 48px);
   border-radius: 0;
   border-top: none;
@@ -98,13 +99,14 @@ body.layout-m .card[data-card="viewers"] {
   border-bottom: none;
   overflow: hidden;
 }
-body.layout-m #resize-left  { grid-column: 2; display: block; }
-body.layout-m #center-group { display: none; }
-body.layout-m #resize-right { grid-column: 4; display: block; }
+body.layout-m #resize-left  { grid-column: 2; grid-row: 1; display: block; }
+body.layout-m #center-group { display: none !important; }
+body.layout-m #resize-right { grid-column: 4; grid-row: 1; display: block; }
 body.layout-m #monitor-center {
   grid-column: 3;
+  grid-row: 1;
   height: calc(100vh - 48px);
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--border);
@@ -112,6 +114,7 @@ body.layout-m #monitor-center {
 }
 body.layout-m .card[data-card="logs"] {
   grid-column: 5;
+  grid-row: 1;
   height: calc(100vh - 48px);
   border-radius: 0;
   border-top: none;
