@@ -66,15 +66,18 @@ def flush_logs(conf, stream_data, chatters):
             "messages": current_minute_stats["messages"][:],
             "census": census
         }
+        # irc_worker が同じ dict オブジェクトへの参照を持っているため、
+        # 再代入せずに既存 dict をその場でリセットする（参照を保持したまま）
         fc = current_minute_stats["follower_total"]
-        current_minute_stats = {
-            "messages": [], "emote_counts": {},
-            "subs": {"Prime": 0, "Tier1": 0, "Tier2": 0, "Tier3": 0},
-            "gift_subs": 0, "bits": 0, "raids": [],
-            "point_redemptions": [], "badges": {},
-            "follower_total": fc,
-            "last_irc_activity": current_minute_stats["last_irc_activity"]
-        }
+        current_minute_stats["messages"] = []
+        current_minute_stats["emote_counts"] = {}
+        current_minute_stats["subs"] = {"Prime": 0, "Tier1": 0, "Tier2": 0, "Tier3": 0}
+        current_minute_stats["gift_subs"] = 0
+        current_minute_stats["bits"] = 0
+        current_minute_stats["raids"] = []
+        current_minute_stats["point_redemptions"] = []
+        current_minute_stats["badges"] = {}
+        current_minute_stats["follower_total"] = fc
 
     with open(filename, 'a', encoding='utf-8') as f:
         f.write(json.dumps(snapshot, ensure_ascii=False) + "\n")
