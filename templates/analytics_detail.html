@@ -40,8 +40,9 @@
                     <div class="stat-box"><div class="stat-val">{{ stats.max_viewers }}</div><div class="stat-label">最大同接</div></div>
                     <div class="stat-box"><div class="stat-val">{{ stats.avg_viewers }}</div><div class="stat-label">平均同接</div></div>
                     <div class="stat-box"><div class="stat-val">{{ stats.total_comments }}</div><div class="stat-label">総コメント数</div></div>
-                    <div class="stat-box"><div class="stat-val" style="color:#e91e63;">{{ stats.total_subs }}</div><div class="stat-label">新規サブスク</div></div>
-                    <div class="stat-box"><div class="stat-val" style="color:#ff9800;">{{ stats.total_bits }}</div><div class="stat-label">ビッツ総額</div></div>
+                    <div class="stat-box"><div class="stat-val" style="color:#e91e63;">{{ stats.total_subs }}</div><div class="stat-label">サブスク</div></div>
+                    <div class="stat-box"><div class="stat-val" style="color:#ff9800;">{{ stats.total_gift_subs }}</div><div class="stat-label">ギフトサブ</div></div>
+                    <div class="stat-box"><div class="stat-val" style="color:#9c27b0;">{{ stats.total_bits }}</div><div class="stat-label">ビッツ総額</div></div>
                     <div class="stat-box"><div class="stat-val" style="color:#009688;">{{ stats.total_points }}</div><div class="stat-label">ポイント使用</div></div>
                 </div>
                 <div class="chart-container"><canvas id="viewerChart"></canvas></div>
@@ -49,9 +50,38 @@
         </div>
 
         {% if has_log_file %}
+        {% if event_logs %}
+        <div class="card">
+            <h2>📢 サブスク・ギフト・レイド</h2>
+            <div class="event-log-grid">
+                {% for ev in event_logs %}
+                <div class="event-log-item event-log-{{ ev.type }}">
+                    <span class="ts">[{{ ev.time }}]</span>
+                    {% if ev.type == 'sub' %}
+                    <span class="event-log-icon">🎉</span>
+                    <span><b>{{ ev.user }}</b> が{% if ev.msg_id == 'resub' %}再{% endif %}サブスク ({{ ev.plan }}, {{ ev.get('months', 1) }}ヶ月)</span>
+                    {% elif ev.type == 'subgift' %}
+                    <span class="event-log-icon">🎁</span>
+                    <span><b>{{ ev.user }}</b> → <b>{{ ev.recipient }}</b> にギフトサブ ({{ ev.plan }})</span>
+                    {% elif ev.type == 'submysterygift' %}
+                    <span class="event-log-icon">🎁</span>
+                    <span><b>{{ ev.user }}</b> が{{ ev.count }}人分のギフトサブ！</span>
+                    {% elif ev.type == 'bits' %}
+                    <span class="event-log-icon">💰</span>
+                    <span><b>{{ ev.user }}</b> が{{ ev.amount }} bits</span>
+                    {% elif ev.type == 'raid' %}
+                    <span class="event-log-icon">🚨</span>
+                    <span><b>{{ ev.user }}</b> がレイド ({{ ev.count }}人)</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="analytics-grid" style="grid-template-columns: 1fr 1fr;">
             <div class="card">
-                <h2>💬 チャット & イベントログ</h2>
+                <h2>💬 チャットログ</h2>
                 <div class="chat-log">
                     {% for line in chat_logs %}
                         {% if line.type == 'msg' %}

@@ -20,7 +20,8 @@ current_minute_stats = {
     "subs": {"Prime": 0, "Tier1": 0, "Tier2": 0, "Tier3": 0},
     "gift_subs": 0, "bits": 0, "raids": [],
     "point_redemptions": [], "badges": {},
-    "follower_total": 0, "last_irc_activity": 0
+    "follower_total": 0, "last_irc_activity": 0,
+    "events": []
 }
 stats_lock = threading.Lock()
 
@@ -64,6 +65,7 @@ def flush_logs(conf, stream_data, chatters):
             "points": current_minute_stats["point_redemptions"][:],
             "badges": current_minute_stats["badges"].copy(),
             "messages": current_minute_stats["messages"][:],
+            "events": current_minute_stats["events"][:],
             "census": census
         }
         # irc_worker が同じ dict オブジェクトへの参照を持っているため、
@@ -77,6 +79,7 @@ def flush_logs(conf, stream_data, chatters):
         current_minute_stats["raids"] = []
         current_minute_stats["point_redemptions"] = []
         current_minute_stats["badges"] = {}
+        current_minute_stats["events"] = []
         current_minute_stats["follower_total"] = fc
 
     with open(filename, 'a', encoding='utf-8') as f:

@@ -85,7 +85,16 @@ def irc_worker(stats_lock, current_minute_stats):
                                         )
                                 if bits > 0:
                                     current_minute_stats["bits"] += bits
+                                    current_minute_stats["events"].append({
+                                        "type": "bits", "user": display_name,
+                                        "user_id": tags.get('user-id'),
+                                        "amount": bits
+                                    })
                                     c.log(f"💰 Cheer! {display_name}: {bits} bits")
+                                    c.log_event({
+                                        "type": "bits", "user": display_name,
+                                        "amount": bits
+                                    })
                                 if tags.get('custom-reward-id'):
                                     current_minute_stats["point_redemptions"].append({
                                         "user": display_name,
@@ -126,6 +135,7 @@ def irc_worker(stats_lock, current_minute_stats):
                         try:
                             msg_id = tags.get('msg-id')
                             display_name = tags.get('display-name', 'Anonymous')
+                            uid = tags.get('user-id')
                             with stats_lock:
                                 if msg_id in ['sub', 'resub']:
                                     plan = tags.get('msg-param-sub-plan', 'Tier1')
@@ -137,17 +147,98 @@ def irc_worker(stats_lock, current_minute_stats):
                                         plan_name = "Tier3"
                                     else:
                                         plan_name = "Tier1"
+                                    months = int(tags.get('msg-param-cumulative-months', 1))
                                     current_minute_stats["subs"][plan_name] += 1
-                                    c.log(f"🎉 Sub! {display_name} ({plan_name})")
+                                    current_minute_stats["events"].append({
+                                        "type": "sub", "user": display_name,
+                                        "user_id": uid, "plan": plan_name,
+                                        "months": months, "msg_id": msg_id
+                                    })
+                                    c.log(f"🎉 Sub! {display_name} ({plan_name}, {months}ヶ月)")
+                                    c.log_event({
+                                        "type": "sub", "user": display_name,
+                                        "plan": plan_name, "months": months,
+                                        "is_resub": msg_id == "resub"
+                                    })
                                 elif msg_id == 'subgift':
+                                    plan = tags.get('msg-param-sub-plan', 'Tier1')
+                                    if plan == "2000":
+                                        plan_name = "Tier2"
+                                    elif plan == "3000":
+                                        plan_name = "Tier3"
+                                    else:
+                                        plan_name = "Tier1"
+                                    recipient = tags.get('msg-param-recipient-display-name', '?')
+                                    recipient_id = tags.get('msg-param-recipient-id')
                                     current_minute_stats["gift_subs"] += 1
-                                    c.log(f"🎁 Gift Sub! {display_name}")
+                                    current_minute_stats["events"].append({
+                                        "type": "subgift", "user": display_name,
+                                        "user_id": uid, "recipient": recipient,
+                                        "recipient_id": recipient_id,
+                                        "plan": plan_name
+                                    })
+                                    c.log(f"🎁 Gift Sub! {display_name} → {recipient} ({plan_name})")
+                                    c.log_event({
+                                        "type": "subgift", "user": display_name,
+                                        "recipient": recipient, "plan": plan_name
+                                    })
+                                elif msg_id == 'submysterygift':
+                                    gift_count = int(tags.get('msg-param-mass-gift-count', 1))
+                                    current_minute_stats["events"].append({
+                                        "type": "submysterygift", "user": display_name,
+                                        "user_id": uid, "count": gift_count
+                                    })
+                                    c.log(f"🎁 Mystery Gift! {display_name} ({gift_count}人分)")
+                                    c.log_event({
+                                        "type": "submysterygift", "user": display_name,
+                                        "count": gift_count
+                                    })
                                 elif msg_id == 'raid':
                                     viewer_count = int(tags.get('msg-param-viewerCount', 0))
                                     current_minute_stats["raids"].append({
                                         "user": display_name, "count": viewer_count
                                     })
+                                    current_minute_stats["events"].append({
+                                        "type": "raid", "user": display_name,
+                                        "user_id": uid, "count": viewer_count
+                                    })
                                     c.log(f"🚨 Raid! {display_name} ({viewer_count} viewers)")
+                                    c.log_event({
+                                        "type": "raid", "user": display_name,
+                                        "count": viewer_count
+                                    })
+
+                            # 視聴者DBにサブスク/ギフト履歴を反映
+                            if uid and msg_id in ['sub', 'resub', 'subgift', 'submysterygift']:
+                                with c.file_lock:
+                                    db = c.load_viewers()
+                                    if uid not in db:
+                                        db[uid] = {
+                                            "name": display_name,
+                                            "login": display_name.lower(),
+                                            "total_visits": 0
+                                        }
+                                    ud = db[uid]
+                                    if msg_id in ['sub', 'resub']:
+                                        ud["total_sub_months"] = ud.get("total_sub_months", 0) + 1
+                                        ud["last_sub_ts"] = int(time.time())
+                                        ud["last_sub_plan"] = plan_name
+                                    elif msg_id in ['subgift', 'submysterygift']:
+                                        ud["total_gifts_given"] = ud.get("total_gifts_given", 0) + (
+                                            gift_count if msg_id == 'submysterygift' else 1
+                                        )
+                                    # ギフトを受け取った側も記録
+                                    if msg_id == 'subgift' and recipient_id:
+                                        if recipient_id not in db:
+                                            db[recipient_id] = {
+                                                "name": recipient,
+                                                "login": recipient.lower(),
+                                                "total_visits": 0
+                                            }
+                                        db[recipient_id]["total_gifts_received"] = (
+                                            db[recipient_id].get("total_gifts_received", 0) + 1
+                                        )
+                                    c.save_viewers(db)
                         except (ValueError, KeyError):
                             pass
 

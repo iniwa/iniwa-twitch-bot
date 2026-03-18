@@ -14,9 +14,11 @@
                     <th onclick="sortTable('historyTable', 4)">コメント</th>
                     <th onclick="sortTable('historyTable', 5)">ビッツ</th>
                     <th onclick="sortTable('historyTable', 6)">サブスク</th>
-                    <th onclick="sortTable('historyTable', 7)">連続</th>
-                    <th onclick="sortTable('historyTable', 8)">メモ</th>
-                    <th onclick="sortTable('historyTable', 9)">最終退出</th>
+                    <th onclick="sortTable('historyTable', 7)">サブ月数</th>
+                    <th onclick="sortTable('historyTable', 8)">ギフト</th>
+                    <th onclick="sortTable('historyTable', 9)">連続</th>
+                    <th onclick="sortTable('historyTable', 10)">メモ</th>
+                    <th onclick="sortTable('historyTable', 11)">最終退出</th>
                 </tr></thead>
                 <tbody id="history-tbody">
                     {% for uid, hist in history.items() %}
@@ -30,6 +32,10 @@
                         <td data-sort="{{ hist.total_comments if hist.total_comments else 0 }}">{{ hist.total_comments if hist.total_comments else 0 }}回</td>
                         <td data-sort="{{ hist.total_bits if hist.total_bits else 0 }}" class="{{ 'bits-count' if hist.total_bits else '' }}">{{ hist.total_bits if hist.total_bits else 0 }}</td>
                         <td data-sort="{{ 1 if hist.is_sub else 0 }}" class="{{ 'sub-active' if hist.is_sub else '' }}">{{ "⭐" if hist.is_sub else "-" }}</td>
+                        <td data-sort="{{ hist.get('total_sub_months', 0) }}">{{ hist.get('total_sub_months', 0) if hist.get('total_sub_months', 0) else "-" }}</td>
+                        <td data-sort="{{ hist.get('total_gifts_given', 0) }}">
+                            {% if hist.get('total_gifts_given', 0) %}🎁{{ hist.get('total_gifts_given', 0) }}{% else %}-{% endif %}
+                        </td>
                         <td data-sort="{{ hist.get('streak', 0) }}">
                             {% if hist.get('streak', 0) > 1 %}🔥{{ hist.get('streak', 0) }}{% else %}-{% endif %}
                         </td>

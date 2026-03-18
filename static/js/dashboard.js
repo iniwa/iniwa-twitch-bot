@@ -68,6 +68,83 @@ function updateMonitor(data) {
 }
 
 // ============================================================
+// Event panel updater
+// ============================================================
+function formatEventTime(isoStr) {
+    if (!isoStr) return '';
+    try {
+        var d = new Date(isoStr);
+        return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return ''; }
+}
+
+function renderEvent(ev) {
+    var icon = '', body = '', cls = '';
+    var user = escHtml(ev.user || '');
+    switch (ev.type) {
+        case 'sub':
+            icon = '\uD83C\uDF89';
+            cls = 'event-type-sub';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">' +
+                (ev.is_resub ? '\u518D\u30B5\u30D6' : '\u30B5\u30D6\u30B9\u30AF') +
+                ' (' + escHtml(ev.plan || '') + ', ' + (ev.months || 1) + '\u30F6\u6708)</span>';
+            break;
+        case 'subgift':
+            icon = '\uD83C\uDF81';
+            cls = 'event-type-subgift';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">\u2192 ' +
+                escHtml(ev.recipient || '') + ' \u306B\u30AE\u30D5\u30C8\u30B5\u30D6 (' + escHtml(ev.plan || '') + ')</span>';
+            break;
+        case 'submysterygift':
+            icon = '\uD83C\uDF81';
+            cls = 'event-type-submysterygift';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">' +
+                (ev.count || 1) + '\u4EBA\u5206\u306E\u30AE\u30D5\u30C8\u30B5\u30D6\uFF01</span>';
+            break;
+        case 'raid':
+            icon = '\uD83D\uDEA8';
+            cls = 'event-type-raid';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">\u304C\u30EC\u30A4\u30C9 (' +
+                (ev.count || 0) + '\u4EBA)</span>';
+            break;
+        case 'bits':
+            icon = '\uD83D\uDCB0';
+            cls = 'event-type-bits';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">' +
+                (ev.amount || 0) + ' bits</span>';
+            break;
+        case 'follow':
+            icon = '\uD83D\uDC9A';
+            cls = 'event-type-follow';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">\u304C\u30D5\u30A9\u30ED\u30FC</span>';
+            break;
+        default:
+            icon = '\u2139\uFE0F';
+            body = '<span class="event-user">' + user + '</span> <span class="event-detail">' + escHtml(ev.type || '') + '</span>';
+    }
+    return '<div class="event-item ' + cls + '">' +
+        '<span class="event-icon">' + icon + '</span>' +
+        '<div class="event-body">' + body + '</div>' +
+        '<span class="event-time">' + formatEventTime(ev.timestamp) + '</span>' +
+        '</div>';
+}
+
+function updateEventPanel(events) {
+    var feed = document.getElementById('event-feed');
+    if (!feed) return;
+    if (!events || events.length === 0) {
+        feed.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.85em;">\u30A4\u30D9\u30F3\u30C8\u5F85\u6A5F\u4E2D...</div>';
+        return;
+    }
+    feed.innerHTML = events.map(renderEvent).join('');
+    var badge = document.getElementById('event-count-badge');
+    if (badge) {
+        badge.textContent = events.length;
+        badge.style.display = events.length > 0 ? 'inline' : 'none';
+    }
+}
+
+// ============================================================
 // Top bar updater
 // ============================================================
 function updateTopBar(data) {
@@ -89,6 +166,7 @@ function pollStatus() {
     fetch('/api/status').then(function(r) { return r.json(); }).then(function(data) {
         updateTopBar(data);
         updateMonitor(data);
+        updateEventPanel(data.events);
 
         var logContainer = document.getElementById('log-container');
         if (logContainer) {
@@ -144,6 +222,8 @@ function pollHistory() {
                 '<td data-sort="' + v.total_comments + '">' + v.total_comments + '\u56DE</td>' +
                 '<td data-sort="' + v.total_bits + '" class="' + (v.total_bits ? 'bits-count' : '') + '">' + v.total_bits + '</td>' +
                 '<td data-sort="' + (v.is_sub ? 1 : 0) + '" class="' + (v.is_sub ? 'sub-active' : '') + '">' + (v.is_sub ? '\u2B50' : '-') + '</td>' +
+                '<td data-sort="' + (v.total_sub_months || 0) + '">' + (v.total_sub_months ? v.total_sub_months : '-') + '</td>' +
+                '<td data-sort="' + (v.total_gifts_given || 0) + '">' + (v.total_gifts_given ? '\uD83C\uDF81' + v.total_gifts_given : '-') + '</td>' +
                 '<td data-sort="' + v.streak + '">' + (v.streak > 1 ? '\uD83D\uDD25' + v.streak : '-') + '</td>' +
                 '<td><div class="memo-text">' + v.memo + '</div>' +
                 '<button class="btn-memo" onclick="openMemoModal(\'' + v.uid + '\', \'' + v.name + '\', \'' + v.memo_esc + '\')">\uD83D\uDCDD</button></td>' +
@@ -156,10 +236,54 @@ function pollHistory() {
     }).catch(function(e) { console.error(e); });
 }
 
+// ============================================================
+// Vertical resize (viewer/event split)
+// ============================================================
+function initVerticalResize() {
+    var handle = document.getElementById('resize-viewer-v');
+    if (!handle) return;
+    var upper = document.getElementById('viewer-upper');
+    var lower = document.getElementById('event-lower');
+    if (!upper || !lower) return;
+
+    // Restore saved ratio
+    var savedRatio = localStorage.getItem('viewer-split-ratio');
+    if (savedRatio) {
+        var r = parseFloat(savedRatio);
+        upper.style.flex = r;
+        lower.style.flex = 1 - r;
+    }
+
+    handle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        handle.classList.add('dragging');
+        var container = upper.parentElement;
+        var containerRect = container.getBoundingClientRect();
+        var handleHeight = handle.offsetHeight;
+        var totalHeight = containerRect.height - handleHeight;
+
+        function onMove(ev) {
+            var offsetY = ev.clientY - containerRect.top;
+            var ratio = Math.max(0.15, Math.min(0.85, offsetY / containerRect.height));
+            upper.style.flex = ratio;
+            lower.style.flex = 1 - ratio;
+            localStorage.setItem('viewer-split-ratio', ratio);
+        }
+        function onUp() {
+            handle.classList.remove('dragging');
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+}
+
 // Start polling
 setInterval(function() { pollStatus(); pollHistory(); }, 10000);
 // Initial load (runs after DOMContentLoaded via common.js layout restore, but initLayoutM also calls pollStatus)
 document.addEventListener('DOMContentLoaded', function() {
     pollStatus();
     pollHistory();
+    initVerticalResize();
 });

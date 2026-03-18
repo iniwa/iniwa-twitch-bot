@@ -9,6 +9,10 @@ VIEWERS_FILE = 'data/viewers.json'
 logs = []
 MAX_LOGS = 50
 
+# イベントログ (フォロー, サブスク, ギフト, レイド等)
+events = []
+MAX_EVENTS = 200
+
 rule_last_executed = {}
 rule_last_comment_count = {}
 current_session_viewers = {}
@@ -53,6 +57,15 @@ def log(message):
     logs.insert(0, message)
     if len(logs) > MAX_LOGS:
         logs.pop()
+
+
+def log_event(event):
+    """イベントログに追加 (サブスク, ギフト, レイド, フォロー等)"""
+    global events
+    event["timestamp"] = get_now().isoformat()
+    events.insert(0, event)
+    if len(events) > MAX_EVENTS:
+        events.pop()
 
 
 def get_now():

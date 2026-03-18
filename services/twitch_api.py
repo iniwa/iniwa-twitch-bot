@@ -251,8 +251,17 @@ def force_update_followers(conf):
                         "unfollowed_at": ""
                     }
                     updated_count += 1
+                    c.log_event({
+                        "type": "follow", "user": api_data['name'],
+                        "followed_at": api_data['followed_at']
+                    })
                 else:
                     ud = db[uid]
+                    if not ud.get("is_follower"):
+                        c.log_event({
+                            "type": "follow", "user": ud.get("name", api_data['name']),
+                            "followed_at": api_data['followed_at']
+                        })
                     if (not ud.get("is_follower")
                             or ud.get("followed_at") != api_data['followed_at']
                             or ud.get("unfollowed_at")):

@@ -127,11 +127,13 @@ def analytics_detail(stream_id):
     log_file = f"data/history/stream_{stream_id}.jsonl"
     chart_labels, chart_viewers, chart_comments = [], [], []
     chat_logs, total_emote_counts, unique_chatters = [], {}, set()
+    event_logs = []
     total_comments = 0
     max_viewers = 0
     sum_viewers = 0
     count_logs = 0
     total_subs = 0
+    total_gift_subs = 0
     total_bits = 0
     total_points = 0
 
@@ -153,7 +155,11 @@ def analytics_detail(stream_id):
                         count_logs += 1
                         total_bits += data['metrics'].get('bits', 0)
                         subs = data.get('subs', {})
-                        total_subs += sum(subs.values()) + data['metrics'].get('gift_subs', 0)
+                        total_subs += sum(subs.values())
+                        total_gift_subs += data['metrics'].get('gift_subs', 0)
+                        for ev in data.get("events", []):
+                            ev["time"] = time_label
+                            event_logs.append(ev)
                         for msg in data.get("messages", []):
                             chat_logs.append({
                                 "type": "msg", "time": time_label,
@@ -185,6 +191,7 @@ def analytics_detail(stream_id):
             "total_comments": total_comments,
             "unique_chatters": len(unique_chatters),
             "total_subs": total_subs,
+            "total_gift_subs": total_gift_subs,
             "total_bits": total_bits,
             "total_points": total_points
         }
@@ -196,6 +203,7 @@ def analytics_detail(stream_id):
             chart_viewers=chart_viewers,
             chart_comments=chart_comments,
             chat_logs=chat_logs,
+            event_logs=event_logs,
             top_emotes=top_emotes
         )
     else:

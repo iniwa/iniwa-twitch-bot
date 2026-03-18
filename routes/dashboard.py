@@ -54,6 +54,9 @@ def get_history_api_data():
             "total_comments": v.get("total_comments", 0),
             "total_bits": v.get("total_bits", 0),
             "is_sub": v.get("is_sub", False),
+            "total_sub_months": v.get("total_sub_months", 0),
+            "total_gifts_given": v.get("total_gifts_given", 0),
+            "total_gifts_received": v.get("total_gifts_received", 0),
             "streak": v.get("streak", 0),
             "memo": v.get("memo", ""),
             "memo_esc": v.get("memo", "").replace("'", "\\'"),
@@ -235,6 +238,7 @@ def api_status():
         "current_title": conf.get('current_title', ''),
         "rules_status": get_rules_status(),
         "total_comments": c.state.get_count(),
+        "events": c.events[:50],
     })
 
 
