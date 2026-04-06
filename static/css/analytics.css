@@ -100,7 +100,7 @@
 
 /* Calendar */
 .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; min-width: 800px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
 .cal-day-header { text-align: center; font-weight: bold; color: var(--text-secondary); padding: 5px; }
 .cal-day {
   background: var(--bg-tertiary);
@@ -267,10 +267,32 @@
 .event-log-submysterygift { border-left: 3px solid #ff9800; padding-left: 8px; }
 .event-log-raid { border-left: 3px solid var(--live); padding-left: 8px; }
 
+/* Stream link (accessible navigation) */
+.stream-link {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+.stream-link:hover {
+  color: var(--accent);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .analytics-grid { grid-template-columns: 1fr; }
   .calendar-grid  { overflow-x: auto; }
   .analytics-tab-nav { flex-wrap: wrap; }
   .tab-btn { padding: 8px 14px; font-size: 0.85em; }
+}
+@media (max-width: 768px) {
+  .calendar-grid {
+    font-size: 0.75em;
+  }
+  .cal-day {
+    min-height: 60px;
+    padding: 2px;
+  }
+  .cal-event {
+    font-size: 0.7em;
+  }
 }

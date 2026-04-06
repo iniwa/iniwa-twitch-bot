@@ -34,13 +34,13 @@
             <div style="margin-top:5px; font-size:0.8em; color:var(--text-secondary); display:flex; align-items:center; gap:5px;">
                 <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;" title="{{ preset.title }}">{{ preset.title }}</span>
                 <span style="flex-shrink:0; display:flex; gap:2px;">
-                    <button type="button" class="btn btn-edit"
-                        onclick="openEditPreset({{ loop.index0 }},
-                        '{{ preset.name|replace("'", "\\'")|replace('"', '&quot;') }}',
-                        '{{ preset.game|replace("'", "\\'")|replace('"', '&quot;') }}',
-                        '{{ preset.title|replace("'", "\\'")|replace('"', '&quot;') }}',
-                        '{{ (preset.tags|join(', '))|replace("'", "\\'")|replace('"', '&quot;') }}',
-                        '{{ (preset.tweet_tags if preset.tweet_tags else "")|replace("'", "\\'")|replace('"', '&quot;') }}')">✏️</button>
+                    <button type="button" class="btn btn-edit" data-action="edit-preset"
+                        data-index="{{ loop.index0 }}"
+                        data-name="{{ preset.name }}"
+                        data-game="{{ preset.game }}"
+                        data-title="{{ preset.title }}"
+                        data-tags="{{ preset.tags|join(', ') }}"
+                        data-tweet-tags="{{ preset.tweet_tags|default('') }}">✏️</button>
                     <button type="submit" formaction="/delete_preset/{{ loop.index0 }}" class="btn btn-danger" style="padding:2px 6px;">🗑️</button>
                 </span>
             </div>

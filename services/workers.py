@@ -146,15 +146,18 @@ def _handle_stream_end(conf, finished_id):
         entry = idx[finished_id]
         st_str = entry.get('start_time')
         if st_str:
-            try:
-                start_dt = datetime.fromisoformat(st_str.replace('Z', '+00:00'))
-                end_dt = c.get_now()
-                duration_sec = (end_dt - start_dt).total_seconds()
-                entry['duration'] = get_formatted_duration(duration_sec)
-                save_stream_index(idx)
-                c.log(f'[TIME] 配信時間確定: {entry["duration"]}')
-            except Exception as e:
-                c.log(f'[WARN] 時間計算エラー: {e}')
+            start_dt = c.parse_iso_jst(st_str)
+            if start_dt:
+                try:
+                    end_dt = c.get_now()
+                    duration_sec = (end_dt - start_dt).total_seconds()
+                    entry['duration'] = get_formatted_duration(duration_sec)
+                    save_stream_index(idx)
+                    c.log(f'[TIME] 配信時間確定: {entry["duration"]}')
+                except Exception as e:
+                    c.log(f'[WARN] 時間計算エラー: {e}')
+            else:
+                c.log('[WARN] 時間計算エラー: start_time の解析に失敗')
 
     if conf.get('enable_vod_download'):
         threading.Thread(
@@ -383,7 +386,7 @@ def start_workers():
     _worker_threads.clear()
     t1 = threading.Thread(target=viewer_worker_loop, args=(conf,), daemon=True, name='viewer-worker')
     t2 = threading.Thread(target=bot_worker, daemon=True, name='bot-worker')
-    t3 = threading.Thread(target=irc_worker, args=(stats_lock, current_minute_stats), daemon=True, name='irc-worker')
+    t3 = threading.Thread(target=irc_worker, args=(stats_lock, current_minute_stats, _shutdown_event), daemon=True, name='irc-worker')
     for t in [t1, t2, t3]:
         t.start()
         _worker_threads.append(t)

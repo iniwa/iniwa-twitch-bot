@@ -1,7 +1,6 @@
 import os
 import time
 import requests
-from datetime import datetime
 import config as c
 from services.storage import (
     load_stream_index, save_stream_index,
@@ -82,9 +81,9 @@ def _find_video_url(conf, stream_id, idx_data):
         if v.get('stream_id') == str(stream_id):
             return v['url'], v['id']
         if st_str:
-            st_dt = datetime.fromisoformat(st_str.replace('Z', '+00:00'))
-            v_dt = datetime.fromisoformat(v['created_at'].replace('Z', '+00:00'))
-            if abs((v_dt - st_dt).total_seconds()) < 3600:
+            st_dt = c.parse_iso_jst(st_str)
+            v_dt = c.parse_iso_jst(v['created_at'])
+            if st_dt and v_dt and abs((v_dt - st_dt).total_seconds()) < 3600:
                 return v['url'], v['id']
 
     return None, None

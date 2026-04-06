@@ -41,7 +41,7 @@
                         </td>
                         <td>
                             <div class="memo-text">{{ hist.memo if hist.memo else "" }}</div>
-                            <button class="btn-memo" onclick="openMemoModal('{{ uid }}', '{{ hist.name|replace("'", "\\'")|replace('"', '&quot;') }}', '{{ (hist.memo if hist.memo else "")|replace("'", "\\'")|replace('"', '&quot;') }}')">📝</button>
+                            <button class="btn-memo" data-action="open-memo" data-uid="{{ uid }}" data-name="{{ hist.name }}" data-memo="{{ hist.memo|default('') }}">📝</button>
                         </td>
                         <td data-sort="{{ 9999999999 if uid in active_uids else (hist.last_seen_ts if hist.last_seen_ts else 0) }}">
                             {% if uid in active_uids %}<span class="watching-status">視聴中</span>{% else %}{{ hist.last_seen_ts | timestamp_to_date }}{% endif %}

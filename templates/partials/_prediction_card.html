@@ -26,8 +26,12 @@
                 <div style="display:flex; height:20px; width:100%; background:var(--bg-primary); border-radius:10px; overflow:hidden; margin-bottom:15px; border:1px solid var(--border);">
                     {% for o in current_prediction.outcomes %}
                         {% if ns.total_points > 0 %}{% set pct = (o.channel_points / ns.total_points * 100) %}{% else %}{% set pct = 0 %}{% endif %}
-                        <div style="width:{{ pct }}%; background:{{ '#5c8df6' if loop.index0==0 else ('deeppink' if loop.index0==1 else '#ff9800') }};"
-                             title="{{ o.title }}: {{ o.channel_points }}pt"></div>
+                        {% set color = '#5c8df6' if loop.index0==0 else ('deeppink' if loop.index0==1 else '#ff9800') %}
+                        <div style="width:{{ pct }}%; background:{{ color }}; display:flex; align-items:center; justify-content:center; font-size:0.7em; color:#fff; min-width:{{ '30px' if pct > 5 else '0' }};"
+                             title="{{ o.title }}: {{ o.channel_points }}pt">
+                            {{ "%.0f"|format(pct) }}%
+                            <span class="sr-only">{{ o.title }}: {{ "%.0f"|format(pct) }}%</span>
+                        </div>
                     {% endfor %}
                 </div>
                 <form action="/resolve_prediction" method="post" style="display:flex; flex-direction:column; gap:5px;">

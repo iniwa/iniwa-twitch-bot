@@ -1,7 +1,6 @@
 import time
 import socket
 import ssl
-import threading
 import config as c
 
 PLAN_MAP = {
@@ -82,28 +81,11 @@ def handle_privmsg(line, tags, nick, sock, conf, stats_lock, current_minute_stat
                     current_minute_stats['badges'].get(badge_name, 0) + 1
                 )
 
-    # 視聴者DB更新
+    # 視聴者DB更新情報を返す (バッチ処理用)
     uid = tags.get('user-id')
     if uid:
-        with c.file_lock:
-            db = c.load_viewers()
-            is_new_user = uid not in db
-            if is_new_user:
-                db[uid] = {
-                    'name': display_name,
-                    'login': display_name.lower(),
-                    'total_visits': 1
-                }
-            ud = db[uid]
-            ud['total_comments'] = ud.get('total_comments', 0) + 1
-            ud['total_bits'] = ud.get('total_bits', 0) + bits
-            ud['is_sub'] = is_sub
-            ud['last_seen_ts'] = int(time.time())
-            c.save_viewers(db)
-
-        if is_new_user and conf.get('enable_welcome') and c.current_stream_id:
-            welcome = f'@{display_name} ようこそ！初コメありがとう！'
-            sock.send(f'PRIVMSG #{nick} :{welcome}\r\n'.encode())
+        return (uid, display_name, is_sub, bits)
+    return None
 
 
 def handle_usernotice(tags, stats_lock, current_minute_stats):
@@ -173,48 +155,69 @@ def handle_usernotice(tags, stats_lock, current_minute_stats):
                 'count': viewer_count
             })
 
-    # 視聴者DBにサブスク/ギフト履歴を反映
+    # 視聴者DB更新情報を返す (バッチ処理用)
     if uid and msg_id in ('sub', 'resub', 'subgift', 'submysterygift'):
-        with c.file_lock:
-            db = c.load_viewers()
-            if uid not in db:
-                db[uid] = {
-                    'name': display_name,
-                    'login': display_name.lower(),
+        tags_copy = dict(tags)
+        return (uid, display_name, msg_id, tags_copy)
+    return None
+
+
+def _apply_privmsg_viewer(db, uid, display_name, is_sub, bits):
+    """視聴者DBにPRIVMSGの更新を適用 (in-place)。新規ユーザーならTrueを返す"""
+    is_new_user = uid not in db
+    if is_new_user:
+        db[uid] = {
+            'name': display_name,
+            'login': display_name.lower(),
+            'total_visits': 1
+        }
+    ud = db[uid]
+    ud['total_comments'] = ud.get('total_comments', 0) + 1
+    ud['total_bits'] = ud.get('total_bits', 0) + bits
+    ud['is_sub'] = is_sub
+    ud['last_seen_ts'] = int(time.time())
+    return is_new_user
+
+
+def _apply_usernotice_viewer(db, uid, display_name, msg_id, tags):
+    """視聴者DBにUSERNOTICEの更新を適用 (in-place)"""
+    if uid not in db:
+        db[uid] = {
+            'name': display_name,
+            'login': display_name.lower(),
+            'total_visits': 0
+        }
+    ud = db[uid]
+    if msg_id in ('sub', 'resub'):
+        plan_name = resolve_plan_name(tags.get('msg-param-sub-plan', 'Tier1'))
+        ud['total_sub_months'] = ud.get('total_sub_months', 0) + 1
+        ud['last_sub_ts'] = int(time.time())
+        ud['last_sub_plan'] = plan_name
+    elif msg_id in ('subgift', 'submysterygift'):
+        gift_count = int(tags.get('msg-param-mass-gift-count', 1)) if msg_id == 'submysterygift' else 1
+        ud['total_gifts_given'] = ud.get('total_gifts_given', 0) + gift_count
+
+    # ギフトを受け取った側も記録
+    if msg_id == 'subgift':
+        recipient_id = tags.get('msg-param-recipient-id')
+        recipient = tags.get('msg-param-recipient-display-name', '?')
+        if recipient_id:
+            if recipient_id not in db:
+                db[recipient_id] = {
+                    'name': recipient,
+                    'login': recipient.lower(),
                     'total_visits': 0
                 }
-            ud = db[uid]
-            if msg_id in ('sub', 'resub'):
-                plan_name = resolve_plan_name(tags.get('msg-param-sub-plan', 'Tier1'))
-                ud['total_sub_months'] = ud.get('total_sub_months', 0) + 1
-                ud['last_sub_ts'] = int(time.time())
-                ud['last_sub_plan'] = plan_name
-            elif msg_id in ('subgift', 'submysterygift'):
-                gift_count = int(tags.get('msg-param-mass-gift-count', 1)) if msg_id == 'submysterygift' else 1
-                ud['total_gifts_given'] = ud.get('total_gifts_given', 0) + gift_count
-
-            # ギフトを受け取った側も記録
-            if msg_id == 'subgift':
-                recipient_id = tags.get('msg-param-recipient-id')
-                recipient = tags.get('msg-param-recipient-display-name', '?')
-                if recipient_id:
-                    if recipient_id not in db:
-                        db[recipient_id] = {
-                            'name': recipient,
-                            'login': recipient.lower(),
-                            'total_visits': 0
-                        }
-                    db[recipient_id]['total_gifts_received'] = (
-                        db[recipient_id].get('total_gifts_received', 0) + 1
-                    )
-            c.save_viewers(db)
+            db[recipient_id]['total_gifts_received'] = (
+                db[recipient_id].get('total_gifts_received', 0) + 1
+            )
 
 
-def irc_worker(stats_lock, current_minute_stats):
-    while True:
+def irc_worker(stats_lock, current_minute_stats, shutdown_event):
+    while not shutdown_event.is_set():
         conf = c.load_config()
         if not conf.get('is_running') or not conf['access_token']:
-            time.sleep(10)
+            shutdown_event.wait(10)
             continue
 
         raw_sock = socket.socket()
@@ -232,7 +235,7 @@ def irc_worker(stats_lock, current_minute_stats):
             joined = False
             buf = ''
 
-            while True:
+            while not shutdown_event.is_set():
                 try:
                     chunk = sock.recv(4096).decode(errors='ignore')
                 except socket.timeout:
@@ -243,6 +246,7 @@ def irc_worker(stats_lock, current_minute_stats):
                     break
                 buf += chunk
 
+                viewer_ops = []
                 while '\r\n' in buf:
                     line, buf = buf.split('\r\n', 1)
                     if not line:
@@ -260,11 +264,34 @@ def irc_worker(stats_lock, current_minute_stats):
 
                     try:
                         if 'PRIVMSG' in line:
-                            handle_privmsg(line, tags, nick, sock, conf, stats_lock, current_minute_stats)
+                            result = handle_privmsg(line, tags, nick, sock, conf, stats_lock, current_minute_stats)
+                            if result:
+                                viewer_ops.append(('privmsg',) + result)
                         elif 'USERNOTICE' in line:
-                            handle_usernotice(tags, stats_lock, current_minute_stats)
+                            result = handle_usernotice(tags, stats_lock, current_minute_stats)
+                            if result:
+                                viewer_ops.append(('usernotice',) + result)
                     except (ValueError, IndexError, KeyError) as e:
                         c.log(f'IRC parse error: {e}')
+
+                # バッチで視聴者DB更新
+                if viewer_ops:
+                    with c.file_lock:
+                        db = c.load_viewers()
+                        welcome_targets = []
+                        for op in viewer_ops:
+                            if op[0] == 'privmsg':
+                                _, uid, dn, is_sub, bits = op
+                                is_new = _apply_privmsg_viewer(db, uid, dn, is_sub, bits)
+                                if is_new and conf.get('enable_welcome') and c.current_stream_id:
+                                    welcome_targets.append(dn)
+                            elif op[0] == 'usernotice':
+                                _, uid, dn, msg_id, tags_copy = op
+                                _apply_usernotice_viewer(db, uid, dn, msg_id, tags_copy)
+                        c.save_viewers(db)
+                    # ウェルカムメッセージはロック解放後に送信
+                    for name in welcome_targets:
+                        sock.send(f'PRIVMSG #{nick} :@{name} ようこそ！初コメありがとう！\r\n'.encode())
 
         except Exception as e:
             c.log(f'IRC Err: {e}')
@@ -276,4 +303,4 @@ def irc_worker(stats_lock, current_minute_stats):
                     raw_sock.close()
             except OSError:
                 pass
-            time.sleep(10)
+            shutdown_event.wait(10)

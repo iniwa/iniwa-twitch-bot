@@ -60,11 +60,15 @@
                         {% for data in sorted_list %}
                         {% set sid = data.sid %}
                         <tr>
-                            <td onclick="window.location.href='/analytics/stream/{{ sid }}'" style="cursor:pointer;">
-                                <div class="date-main">{{ data.start_time[:10] }}</div>
-                                <div class="date-sub">{{ data.start_time[11:16] }}</div>
+                            <td>
+                                <a href="/analytics/stream/{{ sid }}" class="stream-link">
+                                    <div class="date-main">{{ data.start_time[:10] }}</div>
+                                    <div class="date-sub">{{ data.start_time[11:16] }}</div>
+                                </a>
                             </td>
-                            <td onclick="window.location.href='/analytics/stream/{{ sid }}'" style="cursor:pointer;">{{ data.title }}</td>
+                            <td>
+                                <a href="/analytics/stream/{{ sid }}" class="stream-link" style="font-weight:bold;">{{ data.title }}</a>
+                            </td>
                             <td>{{ data.game_name }}</td>
                             <td>{{ data.duration_short }}</td>
                             <td class="nowrap">
@@ -86,7 +90,10 @@
                                 {% else %}<span style="color:var(--text-secondary);">- 未保存</span>{% endif %}
                             </td>
                             <td class="nowrap">
-                                <button class="btn btn-edit" onclick="openEditStreamModal('{{ sid }}', '{{ data.title|replace("'", "\\'")|replace('"', '&quot;') }}', '{{ data.game_name|replace("'", "\\'")|replace('"', '&quot;') }}')">✏️</button>
+                                <button class="btn btn-edit btn-edit-stream"
+                                    data-sid="{{ sid }}"
+                                    data-title="{{ data.title|replace('"', '&quot;') }}"
+                                    data-game="{{ data.game_name|replace('"', '&quot;') }}">✏️</button>
 
                                 {% if data.vod_status == 'downloading' %}
                                     <form action="/cancel_download/{{ sid }}" method="post" style="display:inline;">
@@ -278,4 +285,12 @@
     const followerHistory = {{ follower_history_json | safe }};
 </script>
 <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+<script>
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-edit-stream');
+    if (btn) {
+        openEditStreamModal(btn.dataset.sid, btn.dataset.title, btn.dataset.game);
+    }
+});
+</script>
 {% endblock %}

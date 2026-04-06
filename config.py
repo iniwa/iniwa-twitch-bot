@@ -96,6 +96,16 @@ def get_now():
     return datetime.now(JST)
 
 
+def parse_iso_jst(iso_str):
+    """ISO 8601文字列をJST datetimeに変換"""
+    if not iso_str:
+        return None
+    try:
+        return datetime.fromisoformat(iso_str.replace('Z', '+00:00')).astimezone(JST)
+    except (ValueError, TypeError):
+        return None
+
+
 def save_config(conf):
     with file_lock:
         with open(CONFIG_FILE, 'w', encoding='utf-8') as f:

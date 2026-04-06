@@ -5,12 +5,7 @@ import config as c
 def register_filters(app):
     @app.template_filter('to_datetime')
     def to_datetime(iso_str):
-        if not iso_str:
-            return None
-        try:
-            return datetime.fromisoformat(iso_str.replace('Z', '+00:00')).astimezone(c.JST)
-        except (ValueError, TypeError):
-            return None
+        return c.parse_iso_jst(iso_str)
 
     @app.template_filter('seconds')
     def seconds_filter(val):
@@ -43,8 +38,7 @@ def register_filters(app):
     def format_date(iso_str):
         if not iso_str:
             return "-"
-        try:
-            dt = datetime.fromisoformat(iso_str.replace('Z', '+00:00')).astimezone(c.JST)
-            return dt.strftime('%Y/%m/%d %H:%M')
-        except (ValueError, TypeError):
+        dt = c.parse_iso_jst(iso_str)
+        if dt is None:
             return iso_str
+        return dt.strftime('%Y/%m/%d %H:%M')

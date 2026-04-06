@@ -1,6 +1,6 @@
 import requests
 import config as c
-from services.twitch_api import get_broadcaster_headers
+from services.twitch_api import get_broadcaster_headers, API_TIMEOUT
 
 
 def create_prediction(conf, title, outcomes, duration=120):
@@ -17,7 +17,7 @@ def create_prediction(conf, title, outcomes, duration=120):
     }
 
     try:
-        r = requests.post(url, json=payload, headers=headers, timeout=10)
+        r = requests.post(url, json=payload, headers=headers, timeout=API_TIMEOUT)
         if r.status_code == 200:
             data = r.json()['data'][0]
             c.log(f"[PREDICT] 予想を開始しました: {title}")
@@ -41,7 +41,7 @@ def resolve_prediction(conf, prediction_id, winning_outcome_id):
     }
 
     try:
-        r = requests.patch(url, json=payload, headers=headers, timeout=10)
+        r = requests.patch(url, json=payload, headers=headers, timeout=API_TIMEOUT)
         if r.status_code == 200:
             c.log(f"[OK] 予想を終了しました (勝者確定)")
             return True, r.json()['data'][0]
@@ -63,7 +63,7 @@ def cancel_prediction(conf, prediction_id):
     }
 
     try:
-        r = requests.patch(url, json=payload, headers=headers, timeout=10)
+        r = requests.patch(url, json=payload, headers=headers, timeout=API_TIMEOUT)
         if r.status_code == 200:
             c.log(f"[CANCEL] 予想をキャンセルしました")
             return True, r.json()['data'][0]
@@ -77,7 +77,7 @@ def get_current_prediction(conf):
     url = f"https://api.twitch.tv/helix/predictions?broadcaster_id={conf['broadcaster_id']}"
     headers = get_broadcaster_headers(conf)
     try:
-        r = requests.get(url, headers=headers, timeout=5)
+        r = requests.get(url, headers=headers, timeout=API_TIMEOUT)
         if r.status_code == 200:
             data = r.json().get('data', [])
             for p in data:

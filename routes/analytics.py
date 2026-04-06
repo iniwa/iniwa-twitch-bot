@@ -47,12 +47,9 @@ def analytics_list():
                         data['archive_file_size'] = 0
 
                 if data.get('start_time'):
-                    try:
-                        dt = datetime.fromisoformat(data['start_time'].replace('Z', '+00:00'))
-                        dt_jst = dt.astimezone(c.JST)
+                    dt_jst = c.parse_iso_jst(data['start_time'])
+                    if dt_jst:
                         data['start_time'] = dt_jst.isoformat()
-                    except (ValueError, TypeError):
-                        pass
 
                 dur = data.get('duration', '')
                 if dur and 'm' in dur and 's' in dur:

@@ -29,10 +29,10 @@
                         <td>{{ viewer.duration }}</td>
                         <td>{{ viewer.total }}回</td>
                         <td>
-                            <button class="btn-memo" title="{{ viewer.memo }}" onclick="openMemoModal('{{ viewer.uid }}', '{{ viewer.name }}', '{{ viewer.memo|replace("'", "\\'") }}')">📝</button>
+                            <button class="btn-memo" title="{{ viewer.memo }}" data-action="open-memo" data-uid="{{ viewer.uid }}" data-name="{{ viewer.name }}" data-memo="{{ viewer.memo|default('') }}">📝</button>
                         </td>
                         <td>
-                            <button class="btn-so" onclick="shoutout('{{ viewer.login }}', '{{ viewer.name }}')">SO</button>
+                            <button class="btn-so" data-action="shoutout" data-login="{{ viewer.login }}" data-name="{{ viewer.name }}">SO</button>
                         </td>
                     </tr>
                     {% else %}

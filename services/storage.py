@@ -1,7 +1,6 @@
 import os
 import json
 import re
-from datetime import datetime
 import config as c
 
 DOWNLOAD_DIR = '/app/downloads'
@@ -54,13 +53,10 @@ def get_file_date(start_time_str):
     """start_time 文字列から YYYYMMDD 形式の日付を取得"""
     if not start_time_str:
         return '00000000'
-    try:
-        dt_obj = datetime.fromisoformat(
-            start_time_str.replace('Z', '+00:00')
-        ).astimezone(c.JST)
-        return dt_obj.strftime('%Y%m%d')
-    except (ValueError, TypeError):
+    dt_obj = c.parse_iso_jst(start_time_str)
+    if dt_obj is None:
         return '00000000'
+    return dt_obj.strftime('%Y%m%d')
 
 
 def cleanup_temp_files(save_path, filename_base):
