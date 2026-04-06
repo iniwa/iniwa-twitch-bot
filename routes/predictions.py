@@ -19,11 +19,14 @@ def add_prediction_preset():
     if len(outcomes) < 2:
         return redirect(url_for('dashboard.index'))
 
-    conf['prediction_presets'].append({
-        'title': request.form.get('title', ''),
-        'outcomes': outcomes,
-        'duration': int(request.form.get('duration', 120))
-    })
+    try:
+        conf['prediction_presets'].append({
+            'title': request.form.get('title', ''),
+            'outcomes': outcomes,
+            'duration': max(1, int(request.form.get('duration', 120)))
+        })
+    except (ValueError, TypeError):
+        return redirect(url_for('dashboard.index'))
     c.save_config(conf)
     return redirect(url_for('dashboard.index'))
 
@@ -44,7 +47,7 @@ def update_prediction_preset():
         presets[idx] = {
             'title': request.form.get('title', ''),
             'outcomes': outcomes,
-            'duration': int(request.form.get('duration', 120))
+            'duration': max(1, int(request.form.get('duration', 120)))
         }
         c.save_config(conf)
     return redirect(url_for('dashboard.index'))

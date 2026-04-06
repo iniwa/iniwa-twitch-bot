@@ -20,10 +20,10 @@ def create_prediction(conf, title, outcomes, duration=120):
         r = requests.post(url, json=payload, headers=headers, timeout=10)
         if r.status_code == 200:
             data = r.json()['data'][0]
-            c.log(f"🎰 予想を開始しました: {title}")
+            c.log(f"[PREDICT] 予想を開始しました: {title}")
             return True, data
         else:
-            c.log(f"⚠️ 予想作成失敗: {r.text}")
+            c.log(f"[WARN] 予想作成失敗: {r.text}")
             return False, r.text
     except Exception as e:
         return False, str(e)
@@ -43,10 +43,10 @@ def resolve_prediction(conf, prediction_id, winning_outcome_id):
     try:
         r = requests.patch(url, json=payload, headers=headers, timeout=10)
         if r.status_code == 200:
-            c.log(f"✅ 予想を終了しました (勝者確定)")
+            c.log(f"[OK] 予想を終了しました (勝者確定)")
             return True, r.json()['data'][0]
         else:
-            c.log(f"⚠️ 予想終了失敗: {r.text}")
+            c.log(f"[WARN] 予想終了失敗: {r.text}")
             return False, r.text
     except Exception as e:
         return False, str(e)
@@ -65,7 +65,7 @@ def cancel_prediction(conf, prediction_id):
     try:
         r = requests.patch(url, json=payload, headers=headers, timeout=10)
         if r.status_code == 200:
-            c.log(f"🚫 予想をキャンセルしました")
+            c.log(f"[CANCEL] 予想をキャンセルしました")
             return True, r.json()['data'][0]
         else:
             return False, r.text
@@ -83,6 +83,6 @@ def get_current_prediction(conf):
             for p in data:
                 if p['status'] in ['ACTIVE', 'LOCKED']:
                     return p
-    except (requests.RequestException, KeyError, ValueError):
-        pass
+    except (requests.RequestException, KeyError, ValueError) as e:
+        c.log(f"Prediction status check failed: {e}")
     return None

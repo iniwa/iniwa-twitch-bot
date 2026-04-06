@@ -1,3 +1,11 @@
+function escHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 // Analytics page JavaScript
 var trendChart = null;
 var timelineChart = null;
@@ -105,13 +113,15 @@ function calculateAndShowStats(data) {
         var avgB = gameStats[b].avgCount > 0 ? gameStats[b].totalAvg / gameStats[b].avgCount : 0;
         return avgB - avgA;
     });
+    var html = '';
     sortedGames.forEach(function(g) {
         var st = gameStats[g];
         var avg = st.avgCount > 0 ? (st.totalAvg / st.avgCount).toFixed(1) : "-";
         var gh = Math.floor(st.totalDur / 3600);
         var gm = Math.floor((st.totalDur % 3600) / 60);
-        tbody.innerHTML += '<tr><td>' + g + '</td><td>' + avg + '</td><td>' + gh + 'h ' + gm + 'm</td><td>' + st.count + '</td></tr>';
+        html += '<tr><td>' + escHtml(g) + '</td><td>' + avg + '</td><td>' + gh + 'h ' + gm + 'm</td><td>' + st.count + '</td></tr>';
     });
+    tbody.innerHTML = html;
 }
 
 // Search filtering
@@ -153,59 +163,34 @@ function sortStreamTable(n) {
     }
 }
 
-// Simple list renderer
-function renderSimpleList(data, elementId) {
+// Unified stream list renderer
+function renderStreamList(data, elementId, opts) {
     var tbody = document.getElementById(elementId);
     if (!tbody) return;
-    var sorted = data.slice().sort(function(a, b) { return new Date(b.start_time) - new Date(a.start_time); });
+    opts = opts || {};
+    var sortAsc = opts.sortAsc || false;
+    var sorted = data.slice().sort(function(a, b) {
+        var da = new Date(a.start_time), db = new Date(b.start_time);
+        return sortAsc ? da - db : db - da;
+    });
     if (sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
         return;
     }
     tbody.innerHTML = sorted.map(function(s) {
-        return '<tr><td style="width:120px;">' + s.start_time.substring(5, 16).replace('T', ' ') + '</td>' +
-            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + s.title + '</a></td>' +
-            '<td>' + s.game_name + '</td><td style="width:80px;">' + (s.duration_short || '-') + '</td></tr>';
-    }).join('');
-}
-
-// Monthly list renderer with calendar hover highlight
-function renderMonthlyList(data) {
-    var tbody = document.getElementById('monthly-list-tbody');
-    if (!tbody) return;
-    var sorted = data.slice().sort(function(a, b) { return new Date(a.start_time) - new Date(b.start_time); });
-    if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
-        return;
-    }
-    tbody.innerHTML = sorted.map(function(s) {
-        var utcDate = new Date(s.start_time);
-        var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
-        var dateStr = jstDate.toISOString().substring(0, 10);
-        return '<tr data-date="' + dateStr + '" onmouseenter="highlightCalDay(\'' + dateStr + '\')" onmouseleave="unhighlightCalDay(\'' + dateStr + '\')">' +
+        var dateAttr = '';
+        var hoverAttr = '';
+        if (opts.withDateHover) {
+            var utcDate = new Date(s.start_time);
+            var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
+            var dateStr = jstDate.toISOString().substring(0, 10);
+            dateAttr = ' data-date="' + dateStr + '"';
+            hoverAttr = ' onmouseenter="highlightCalDay(\'' + dateStr + '\')" onmouseleave="unhighlightCalDay(\'' + dateStr + '\')"';
+        }
+        return '<tr' + dateAttr + hoverAttr + '>' +
             '<td style="width:120px;">' + s.start_time.substring(5, 16).replace('T', ' ') + '</td>' +
-            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + s.title + '</a></td>' +
-            '<td>' + s.game_name + '</td><td style="width:80px;">' + (s.duration_short || '-') + '</td></tr>';
-    }).join('');
-}
-
-// Weekly list renderer with calendar hover highlight
-function renderWeeklyList(data) {
-    var tbody = document.getElementById('weekly-list-tbody');
-    if (!tbody) return;
-    var sorted = data.slice().sort(function(a, b) { return new Date(a.start_time) - new Date(b.start_time); });
-    if (sorted.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:10px;">データなし</td></tr>';
-        return;
-    }
-    tbody.innerHTML = sorted.map(function(s) {
-        var utcDate = new Date(s.start_time);
-        var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
-        var dateStr = jstDate.toISOString().substring(0, 10);
-        return '<tr data-date="' + dateStr + '" onmouseenter="highlightCalDay(\'' + dateStr + '\')" onmouseleave="unhighlightCalDay(\'' + dateStr + '\')">' +
-            '<td style="width:120px;">' + s.start_time.substring(5, 16).replace('T', ' ') + '</td>' +
-            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + s.title + '</a></td>' +
-            '<td>' + s.game_name + '</td><td style="width:80px;">' + (s.duration_short || '-') + '</td></tr>';
+            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + escHtml(s.title) + '</a></td>' +
+            '<td>' + escHtml(s.game_name) + '</td><td style="width:80px;">' + (s.duration_short || '-') + '</td></tr>';
     }).join('');
 }
 
@@ -284,7 +269,7 @@ function renderCalendar(year, month) {
         var d = new Date(s.start_time);
         return d >= new Date(monthStart.getTime() - 86400000) && d <= new Date(monthEnd.getTime() + 86400000);
     });
-    renderMonthlyList(monthlyData);
+    renderStreamList(monthlyData, 'monthly-list-tbody', {sortAsc: true, withDateHover: true});
 
     for (var i = 0; i < firstDay; i++) { grid.innerHTML += '<div class="cal-day other-month"></div>'; }
 
@@ -305,7 +290,7 @@ function renderCalendar(year, month) {
             var utcDate = new Date(s.start_time);
             var jstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
             var timeStr = jstDate.toISOString().substring(11, 16);
-            eventsHtml += '<div class="cal-event" onclick="event.stopPropagation(); window.location.href=\'/analytics/stream/' + s.sid + '\'" title="' + s.title + '">● ' + timeStr + '</div>';
+            eventsHtml += '<div class="cal-event" onclick="event.stopPropagation(); window.location.href=\'/analytics/stream/' + s.sid + '\'" title="' + escHtml(s.title) + '">● ' + timeStr + '</div>';
         });
         grid.innerHTML += '<div class="cal-day' + tlClass + '" data-date="' + dateStr + '" onclick="setTimelineStartDate(\'' + dateStr + '\')"><div class="cal-date-num">' + day + '</div>' + eventsHtml + '</div>';
     }
@@ -342,7 +327,7 @@ function renderWeeklyTimeline() {
         var d = new Date(s.start_time);
         return d >= startDate && d <= endDate;
     });
-    renderWeeklyList(weeklyData);
+    renderStreamList(weeklyData, 'weekly-list-tbody', {sortAsc: true, withDateHover: true});
 
     var labels = [];
     for (var i = 0; i < 7; i++) {
@@ -602,39 +587,41 @@ function renderFilteredList() {
 
     tbody.innerHTML = pageData.map(function(s) {
         return '<tr><td><div style="font-weight:bold;">' + s.start_time.substring(0, 10) + '</div><div style="font-size:0.8em; color:#888;">' + s.start_time.substring(11, 16) + '</div></td>' +
-            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + s.title + '</a></td>' +
-            '<td>' + s.game_name + '</td><td><b>' + s.max_viewers + '</b> / ' + s.avg_viewers + '</td>' +
+            '<td><a href="/analytics/stream/' + s.sid + '" target="_blank" style="font-weight:bold; color:#6441a5; text-decoration:none;">' + escHtml(s.title) + '</a></td>' +
+            '<td>' + escHtml(s.game_name) + '</td><td><b>' + s.max_viewers + '</b> / ' + s.avg_viewers + '</td>' +
             '<td>' + (s.follower_count ? s.follower_count + '人' : '<span style="color:#ccc;">-</span>') + '</td></tr>';
     }).join('');
 }
 
 // Download progress polling
-setInterval(function() {
-    fetch('/api/download_progress').then(function(r) { return r.json(); }).then(function(data) {
-        var activeSids = new Set(Object.keys(data));
-        var shouldReload = false;
-        for (var sid in data) {
-            var info = data[sid];
-            var el = document.getElementById('progress-' + sid);
-            if (el) {
-                if (info.status === 'downloading') {
-                    el.innerHTML = '<div class="status-wait">📥 ' + info.percent + '%</div><div style="font-size:0.7em; color:#666;">(' + info.speed + ')</div>';
-                } else if (info.status === 'finished') {
-                    el.innerHTML = '<div class="status-wait">🔄 仕上げ中...</div>';
-                } else if (info.status === 'failed') {
-                    el.innerHTML = '<span class="status-fail">❌ エラー</span>';
+(function scheduleProgressPoll() {
+    setTimeout(function() {
+        fetch('/api/download_progress').then(function(r) { return r.json(); }).then(function(data) {
+            var activeSids = new Set(Object.keys(data));
+            var shouldReload = false;
+            for (var sid in data) {
+                var info = data[sid];
+                var el = document.getElementById('progress-' + sid);
+                if (el) {
+                    if (info.status === 'downloading') {
+                        el.innerHTML = '<div class="status-wait">' + escHtml(info.percent + '%') + '</div><div style="font-size:0.7em; color:#666;">(' + escHtml(info.speed) + ')</div>';
+                    } else if (info.status === 'finished') {
+                        el.innerHTML = '<div class="status-wait">仕上げ中...</div>';
+                    } else if (info.status === 'failed') {
+                        el.innerHTML = '<span class="status-fail">エラー</span>';
+                    }
                 }
             }
-        }
-        document.querySelectorAll('[id^="progress-"]').forEach(function(el) {
-            if (el.querySelector('.status-wait')) {
-                var sid = el.id.replace('progress-', '');
-                if (!activeSids.has(sid)) { shouldReload = true; }
-            }
-        });
-        if (shouldReload) { location.reload(); }
-    });
-}, 2000);
+            document.querySelectorAll('[id^="progress-"]').forEach(function(el) {
+                if (el.querySelector('.status-wait')) {
+                    var sid = el.id.replace('progress-', '');
+                    if (!activeSids.has(sid)) { shouldReload = true; }
+                }
+            });
+            if (shouldReload) { location.reload(); }
+        }).catch(function(){}).finally(scheduleProgressPoll);
+    }, 2000);
+})();
 
 // Edit stream modal
 function openEditStreamModal(sid, title, game) {

@@ -6,3 +6,5 @@ __pycache__
 CLAUDE.md
 CLAUDE_ja.md
 .claude/
+.env
+.env.*

@@ -78,13 +78,13 @@ def cleanup_temp_files(save_path, filename_base):
         if os.path.exists(full_path):
             try:
                 os.remove(full_path)
-                c.log(f'🧹 ゴミファイルを削除しました: {pat}')
+                c.log(f'[CLEAN] ゴミファイルを削除しました: {pat}')
             except OSError as e:
-                c.log(f'⚠️ ゴミ削除失敗: {pat} ({e})')
+                c.log(f'[WARN] ゴミ削除失敗: {pat} ({e})')
 
 
 def fix_dangling_states():
-    c.log('🔧 起動時チェック: ダウンロード状態の整合性を確認中...')
+    c.log('[FIX] 起動時チェック: ダウンロード状態の整合性を確認中...')
     with c.file_lock:
         idx = load_stream_index()
         modified = False
@@ -99,14 +99,14 @@ def fix_dangling_states():
             full_path = os.path.join(ARCHIVE_WAIT_DIR, expected_filename)
 
             if os.path.exists(full_path):
-                c.log(f'✅ 復旧: {expected_filename} を確認。ステータスを[保存済]に修正します。')
+                c.log(f'[OK] 復旧: {expected_filename} を確認。ステータスを[保存済]に修正します。')
                 data['vod_status'] = 'downloaded'
                 data['file_path'] = full_path
                 if 'vod_id' not in data:
                     data['vod_id'] = sid
                 modified = True
             else:
-                c.log(f'⚠️ リセット: {sid} の完了ファイルがありません。ステータスを戻し、ゴミを掃除します。')
+                c.log(f'[WARN] リセット: {sid} の完了ファイルがありません。ステータスを戻し、ゴミを掃除します。')
                 cleanup_temp_files(ARCHIVE_WAIT_DIR, f'{file_date}_{file_title}')
                 data['vod_status'] = 'not_downloaded'
                 modified = True
@@ -116,7 +116,7 @@ def fix_dangling_states():
 
 
 def delete_history_data(stream_id):
-    c.log(f'🗑️ 履歴削除プロセス開始: {stream_id}')
+    c.log(f'[DEL] 履歴削除プロセス開始: {stream_id}')
 
     with c.file_lock:
         idx = load_stream_index()
@@ -125,22 +125,22 @@ def delete_history_data(stream_id):
             if file_path and os.path.exists(file_path):
                 try:
                     os.remove(file_path)
-                    c.log(f'🗑️ ファイル削除: {file_path}')
+                    c.log(f'[DEL] ファイル削除: {file_path}')
                 except OSError as e:
-                    c.log(f'⚠️ ファイル削除失敗: {e}')
+                    c.log(f'[WARN] ファイル削除失敗: {e}')
 
             del idx[stream_id]
             save_stream_index(idx)
-            c.log('✅ インデックス情報を削除しました')
+            c.log('[OK] インデックス情報を削除しました')
         else:
-            c.log('ℹ️ インデックス情報は見つかりませんでした')
+            c.log('[INFO] インデックス情報は見つかりませんでした')
 
     log_path = f'data/history/stream_{stream_id}.jsonl'
     if os.path.exists(log_path):
         try:
             os.remove(log_path)
-            c.log(f'🗑️ ログファイル削除: {log_path}')
+            c.log(f'[DEL] ログファイル削除: {log_path}')
         except OSError as e:
-            c.log(f'⚠️ ログ削除失敗: {e}')
+            c.log(f'[WARN] ログ削除失敗: {e}')
 
     return True

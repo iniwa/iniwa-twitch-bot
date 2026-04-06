@@ -3,8 +3,10 @@ import json
 import threading
 from datetime import datetime, timedelta, timezone
 
-CONFIG_FILE = 'data/config.json'
-VIEWERS_FILE = 'data/viewers.json'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+CONFIG_FILE = os.path.join(DATA_DIR, 'config.json')
+VIEWERS_FILE = os.path.join(DATA_DIR, 'viewers.json')
 
 MAX_LOGS = 50
 MAX_EVENTS = 200
@@ -129,7 +131,7 @@ def _deep_merge(base, override):
 
 
 def load_config():
-    os.makedirs('data', exist_ok=True)
+    os.makedirs(DATA_DIR, exist_ok=True)
 
     if not os.path.exists(CONFIG_FILE):
         return DEFAULT_CONFIG.copy()

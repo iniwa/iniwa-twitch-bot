@@ -7,13 +7,13 @@ bp = Blueprint('viewers', __name__)
 
 @bp.route('/save_memo', methods=['POST'])
 def save_memo():
-    uid = request.form.get('user_id')
-    memo = request.form.get('memo')
+    uid = request.form.get('user_id', '').strip()
+    memo = request.form.get('memo', '')
     if uid:
         with c.file_lock:
             db = c.load_viewers()
             if uid in db:
-                db[uid]['memo'] = memo
+                db[uid]['memo'] = memo[:500]  # limit length
                 c.save_viewers(db)
     return redirect(url_for('dashboard.index'))
 

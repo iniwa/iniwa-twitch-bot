@@ -1,4 +1,7 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
+
+ARG UID=1000
+ARG GID=1000
 
 WORKDIR /app
 
@@ -16,13 +19,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 4. データディレクトリ作成 & 所有者設定
-RUN mkdir -p /app/data && chown -R 1000:1000 /app
+RUN mkdir -p /app/data && chown -R ${UID}:${GID} /app
 
 EXPOSE 8501
 
 # 日本時間設定
 ENV TZ=Asia/Tokyo
 
-USER 1000:1000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/')" || exit 1
 
-CMD ["python", "app.py"]
+USER ${UID}:${GID}
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8501", "--workers", "1", "--threads", "4", "app:app"]

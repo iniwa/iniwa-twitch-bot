@@ -4,6 +4,9 @@ from datetime import datetime
 import config as c
 from services.storage import load_stream_index, save_stream_index, ensure_directories
 
+API_TIMEOUT = 10
+MAX_PAGINATION_PAGES = 100
+
 
 def get_headers(conf):
     token = conf['access_token'].replace("oauth:", "")
@@ -29,20 +32,20 @@ def get_stream_info(conf):
     for attempt in range(retries):
         try:
             url = f"https://api.twitch.tv/helix/streams?user_id={conf['broadcaster_id']}"
-            r = requests.get(url, headers=get_headers(conf), timeout=5)
+            r = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
             if r.status_code == 200:
                 if r.json().get('data'):
                     return True, r.json()['data'][0]
                 else:
                     return True, None
-            c.log(f"⚠️ API check (attempt {attempt+1}) status {r.status_code}")
+            c.log(f"[WARN] API check (attempt {attempt+1}) status {r.status_code}")
         except requests.exceptions.RequestException as e:
-            c.log(f"⚠️ API check (attempt {attempt+1}) error: {e}")
+            c.log(f"[WARN] API check (attempt {attempt+1}) error: {e}")
 
         if attempt < retries - 1:
             time.sleep(3)
 
-    c.log("❌ API check failed. Network issue?")
+    c.log("[ERROR] API check failed. Network issue?")
     return False, None
 
 
@@ -79,7 +82,7 @@ def check_stream_status_and_update(conf):
 def get_total_followers(conf):
     try:
         url = f"https://api.twitch.tv/helix/channels/followers?broadcaster_id={conf['broadcaster_id']}&first=1"
-        r = requests.get(url, headers=get_broadcaster_headers(conf), timeout=5)
+        r = requests.get(url, headers=get_broadcaster_headers(conf), timeout=API_TIMEOUT)
         if r.status_code == 200:
             return r.json().get('total', 0)
     except (requests.RequestException, KeyError, ValueError):
@@ -91,7 +94,9 @@ def get_chatters(conf):
     users = []
     cursor = None
     try:
-        while True:
+        pages = 0
+        while pages < MAX_PAGINATION_PAGES:
+            pages += 1
             url = (
                 f"https://api.twitch.tv/helix/chat/chatters"
                 f"?broadcaster_id={conf['broadcaster_id']}"
@@ -99,7 +104,7 @@ def get_chatters(conf):
             )
             if cursor:
                 url += f"&after={cursor}"
-            r = requests.get(url, headers=get_headers(conf), timeout=5)
+            r = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
             if r.status_code != 200:
                 return None
             data = r.json()
@@ -121,7 +126,7 @@ def send_chat(conf, message):
         }
         requests.post(
             'https://api.twitch.tv/helix/chat/messages',
-            json=payload, headers=get_headers(conf), timeout=5
+            json=payload, headers=get_headers(conf), timeout=API_TIMEOUT
         )
         return True
     except (requests.RequestException, KeyError):
@@ -132,7 +137,7 @@ def get_game_id(conf, game_name):
     try:
         url = "https://api.twitch.tv/helix/games"
         params = {"name": game_name}
-        r = requests.get(url, headers=get_headers(conf), params=params, timeout=5)
+        r = requests.get(url, headers=get_headers(conf), params=params, timeout=API_TIMEOUT)
         if r.status_code == 200 and r.json()['data']:
             return r.json()['data'][0]['id']
     except (requests.RequestException, KeyError, IndexError):
@@ -146,7 +151,7 @@ def search_games(conf, query):
             'https://api.twitch.tv/helix/search/categories',
             headers=get_headers(conf),
             params={'query': query, 'first': 10},
-            timeout=5
+            timeout=API_TIMEOUT
         )
         if r.status_code == 200:
             return r.json().get('data', [])
@@ -166,7 +171,10 @@ def update_channel_info(conf, game_name, title, tags=None):
         if tags is not None and isinstance(tags, list):
             payload["tags"] = tags[:10]
 
-        requests.patch(url, json=payload, headers=get_broadcaster_headers(conf), timeout=10)
+        r = requests.patch(url, json=payload, headers=get_broadcaster_headers(conf), timeout=API_TIMEOUT)
+        if r.status_code not in (200, 204):
+            c.log(f"Channel update failed: {r.status_code}")
+            return False
         return True
     except (requests.RequestException, KeyError):
         return False
@@ -175,7 +183,7 @@ def update_channel_info(conf, game_name, title, tags=None):
 def get_user_id_by_login(conf, login_name):
     try:
         url = f"https://api.twitch.tv/helix/users?login={login_name}"
-        r = requests.get(url, headers=get_headers(conf), timeout=5)
+        r = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
         if r.status_code == 200 and r.json()['data']:
             return r.json()['data'][0]['id']
     except (requests.RequestException, KeyError, IndexError):
@@ -186,7 +194,7 @@ def get_user_id_by_login(conf, login_name):
 def get_channel_info_by_id(conf, user_id):
     try:
         url = f"https://api.twitch.tv/helix/channels?broadcaster_id={user_id}"
-        r = requests.get(url, headers=get_headers(conf), timeout=5)
+        r = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
         if r.status_code == 200 and r.json()['data']:
             return r.json()['data'][0]
     except (requests.RequestException, KeyError, IndexError):
@@ -205,12 +213,12 @@ def perform_shoutout(conf, target_login_name):
         f"&moderator_id={conf['broadcaster_id']}"
     )
     try:
-        r = requests.post(url, headers=get_broadcaster_headers(conf), timeout=5)
+        r = requests.post(url, headers=get_broadcaster_headers(conf), timeout=API_TIMEOUT)
         if r.status_code == 204:
             info = get_channel_info_by_id(conf, target_id)
             game = info.get('game_name', 'Unknown') if info else 'Unknown'
             send_chat(conf, f"@{target_login_name} 前回は {game} を配信していました！")
-            return True, f"📣 公式SO成功: @{target_login_name}"
+            return True, f"[SO] 公式SO成功: @{target_login_name}"
         return False, f"失敗: {r.status_code}"
     except Exception as e:
         return False, f"エラー: {e}"
@@ -222,11 +230,13 @@ def force_update_followers(conf):
     cursor = None
     endpoint = "https://api.twitch.tv/helix/channels/followers"
     try:
-        while True:
+        pages = 0
+        while pages < MAX_PAGINATION_PAGES:
+            pages += 1
             params = [('broadcaster_id', conf['broadcaster_id']), ('first', '100')]
             if cursor:
                 params.append(('after', cursor))
-            r = requests.get(endpoint, headers=get_broadcaster_headers(conf), params=params, timeout=10)
+            r = requests.get(endpoint, headers=get_broadcaster_headers(conf), params=params, timeout=API_TIMEOUT)
             if r.status_code != 200:
                 return "APIエラー"
             data = r.json()
@@ -241,47 +251,46 @@ def force_update_followers(conf):
                 break
             time.sleep(0.2)
 
-        with c.file_lock:
-            db = c.load_viewers()
-            updated_count = 0
-            today_str = c.get_now().strftime('%Y-%m-%d')
+        db = c.load_viewers()
+        updated_count = 0
+        today_str = c.get_now().strftime('%Y-%m-%d')
 
-            for uid, api_data in all_followers_map.items():
-                if uid not in db:
-                    db[uid] = {
-                        "name": api_data['name'], "login": api_data['login'],
-                        "is_follower": True, "followed_at": api_data['followed_at'],
-                        "unfollowed_at": ""
-                    }
-                    updated_count += 1
+        for uid, api_data in all_followers_map.items():
+            if uid not in db:
+                db[uid] = {
+                    "name": api_data['name'], "login": api_data['login'],
+                    "is_follower": True, "followed_at": api_data['followed_at'],
+                    "unfollowed_at": ""
+                }
+                updated_count += 1
+                c.log_event({
+                    "type": "follow", "user": api_data['name'],
+                    "followed_at": api_data['followed_at']
+                })
+            else:
+                ud = db[uid]
+                if not ud.get("is_follower"):
                     c.log_event({
-                        "type": "follow", "user": api_data['name'],
+                        "type": "follow", "user": ud.get("name", api_data['name']),
                         "followed_at": api_data['followed_at']
                     })
-                else:
-                    ud = db[uid]
-                    if not ud.get("is_follower"):
-                        c.log_event({
-                            "type": "follow", "user": ud.get("name", api_data['name']),
-                            "followed_at": api_data['followed_at']
-                        })
-                    if (not ud.get("is_follower")
-                            or ud.get("followed_at") != api_data['followed_at']
-                            or ud.get("unfollowed_at")):
-                        ud["is_follower"] = True
-                        ud["followed_at"] = api_data['followed_at']
-                        ud["unfollowed_at"] = ""
-                        updated_count += 1
-
-            for uid, user_data in db.items():
-                if user_data.get("is_follower") and uid not in all_followers_map:
-                    user_data["is_follower"] = False
-                    if not user_data.get("unfollowed_at"):
-                        user_data["unfollowed_at"] = today_str
+                if (not ud.get("is_follower")
+                        or ud.get("followed_at") != api_data['followed_at']
+                        or ud.get("unfollowed_at")):
+                    ud["is_follower"] = True
+                    ud["followed_at"] = api_data['followed_at']
+                    ud["unfollowed_at"] = ""
                     updated_count += 1
 
-            if updated_count > 0:
-                c.save_viewers(db)
+        for uid, user_data in db.items():
+            if user_data.get("is_follower") and uid not in all_followers_map:
+                user_data["is_follower"] = False
+                if not user_data.get("unfollowed_at"):
+                    user_data["unfollowed_at"] = today_str
+                updated_count += 1
+
+        if updated_count > 0:
+            c.save_viewers(db)
 
         return f"同期完了: {len(all_followers_map)}人確認、{updated_count}件更新。"
     except Exception as e:
@@ -289,10 +298,10 @@ def force_update_followers(conf):
 
 
 def sync_vod_history(conf, force_update=False):
-    c.log("🔄 過去の配信履歴(VOD)を同期中..." + (" (強制更新モード)" if force_update else ""))
+    c.log("[SYNC] 過去の配信履歴(VOD)を同期中..." + (" (強制更新モード)" if force_update else ""))
     try:
         url = f"https://api.twitch.tv/helix/videos?user_id={conf['broadcaster_id']}&type=archive&first=100"
-        r = requests.get(url, headers=get_headers(conf), timeout=15)
+        r = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
         if r.status_code == 200:
             videos = r.json().get('data', [])
             idx = load_stream_index()
@@ -347,9 +356,9 @@ def sync_vod_history(conf, force_update=False):
 
             if updated_count > 0:
                 save_stream_index(idx)
-                c.log(f"✅ 配信履歴の同期完了: {updated_count}件を更新しました。")
+                c.log(f"[OK] 配信履歴の同期完了: {updated_count}件を更新しました。")
             else:
-                c.log("ℹ️ 更新が必要なデータはありませんでした。")
+                c.log("[INFO] 更新が必要なデータはありませんでした。")
 
     except Exception as e:
-        c.log(f"⚠️ 履歴同期エラー: {e}")
+        c.log(f"[WARN] 履歴同期エラー: {e}")

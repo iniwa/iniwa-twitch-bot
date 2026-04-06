@@ -1,3 +1,4 @@
+import copy
 import time
 import json
 import os
@@ -24,8 +25,17 @@ EMPTY_MINUTE_STATS = {
     'events': []
 }
 
-current_minute_stats = {k: v.copy() if isinstance(v, (dict, list)) else v for k, v in EMPTY_MINUTE_STATS.items()}
+current_minute_stats = copy.deepcopy(EMPTY_MINUTE_STATS)
 stats_lock = threading.Lock()
+
+# Intervals (seconds)
+VIEWER_POLL_INTERVAL = 20
+FOLLOWER_CHECK_INTERVAL = 1800  # 30 minutes
+LOG_FLUSH_INTERVAL = 60
+OFFLINE_GRACE_COUNT = 3
+AUTO_DOWNLOAD_DELAY = 300  # 5 minutes
+
+_shutdown_event = threading.Event()
 
 
 def _reset_minute_stats():
@@ -37,12 +47,8 @@ def _reset_minute_stats():
     for k, v in EMPTY_MINUTE_STATS.items():
         if k in preserved:
             current_minute_stats[k] = preserved[k]
-        elif isinstance(v, dict):
-            current_minute_stats[k] = v.copy()
-        elif isinstance(v, list):
-            current_minute_stats[k] = v.copy()
         else:
-            current_minute_stats[k] = v
+            current_minute_stats[k] = copy.deepcopy(v)
 
 
 def flush_logs(conf, stream_data, chatters):
@@ -133,7 +139,7 @@ def get_debug_status():
 
 def _handle_stream_end(conf, finished_id):
     """配信終了時の処理"""
-    c.log('⚫ 配信終了検知')
+    c.log('[END] 配信終了検知')
 
     idx = load_stream_index()
     if finished_id in idx:
@@ -146,9 +152,9 @@ def _handle_stream_end(conf, finished_id):
                 duration_sec = (end_dt - start_dt).total_seconds()
                 entry['duration'] = get_formatted_duration(duration_sec)
                 save_stream_index(idx)
-                c.log(f'⏱️ 配信時間確定: {entry["duration"]}')
+                c.log(f'[TIME] 配信時間確定: {entry["duration"]}')
             except Exception as e:
-                c.log(f'⚠️ 時間計算エラー: {e}')
+                c.log(f'[WARN] 時間計算エラー: {e}')
 
     if conf.get('enable_vod_download'):
         threading.Thread(
@@ -225,15 +231,15 @@ def viewer_worker_loop(conf):
         if conf.get('broadcaster_id'):
             sync_vod_history(conf)
     except Exception as e:
-        c.log(f'⚠️ 初期VOD同期エラー: {e}')
+        c.log(f'[WARN] 初期VOD同期エラー: {e}')
 
     time.sleep(5)
-    while True:
+    while not _shutdown_event.is_set():
         try:
             conf = c.load_config()
 
             # 定期的なフォロワー/VOD同期 (30分ごと)
-            if conf.get('is_running') and (time.time() - last_follow_check > 1800):
+            if conf.get('is_running') and (time.time() - last_follow_check > FOLLOWER_CHECK_INTERVAL):
                 force_update_followers(conf)
                 sync_vod_history(conf)
                 last_follow_check = time.time()
@@ -252,16 +258,16 @@ def viewer_worker_loop(conf):
             is_live, stream_data, is_error = check_stream_status_and_update(conf)
 
             if is_error:
-                c.log('⚠️ API接続エラー: 状態を維持して再試行します')
-                time.sleep(20)
+                c.log('[WARN] API接続エラー: 状態を維持して再試行します')
+                time.sleep(VIEWER_POLL_INTERVAL)
                 continue
 
             # オフライン猶予 (3回連続でオフラインなら確定)
             if not is_live and c.current_stream_id is not None:
                 offline_streak += 1
-                if offline_streak < 3:
-                    c.log(f'⚠️ オフライン検知 ({offline_streak}/3) - 待機中...')
-                    time.sleep(20)
+                if offline_streak < OFFLINE_GRACE_COUNT:
+                    c.log(f'[WARN] オフライン検知 ({offline_streak}/3) - 待機中...')
+                    time.sleep(VIEWER_POLL_INTERVAL)
                     continue
             else:
                 offline_streak = 0
@@ -281,7 +287,7 @@ def viewer_worker_loop(conf):
             if not is_live:
                 if c.current_stream_id is not None:
                     _handle_stream_end(conf, c.current_stream_id)
-                time.sleep(20)
+                time.sleep(VIEWER_POLL_INTERVAL)
                 continue
 
             # 配信開始検知
@@ -290,7 +296,7 @@ def viewer_worker_loop(conf):
                 c.current_game = stream_data.get('game_name')
                 c.current_session_viewers.clear()
                 c.state.reset()
-                c.log(f'🟣 配信開始検知: {stream_data.get("title")} ({c.current_game})')
+                c.log(f'[START] 配信開始検知: {stream_data.get("title")} ({c.current_game})')
 
                 idx = load_stream_index()
                 if stream_id not in idx:
@@ -310,24 +316,24 @@ def viewer_worker_loop(conf):
 
             chatters = get_chatters(conf)
             if chatters is None:
-                time.sleep(20)
+                time.sleep(VIEWER_POLL_INTERVAL)
                 continue
 
             _update_chatters(conf, chatters, stream_id)
 
-            if time.time() - last_log_time >= 60:
+            if time.time() - last_log_time >= LOG_FLUSH_INTERVAL:
                 flush_logs(conf, stream_data, chatters)
                 last_log_time = time.time()
 
-            time.sleep(20)
+            time.sleep(VIEWER_POLL_INTERVAL)
         except Exception as e:
             c.log(f'Viewer Err: {e}')
-            time.sleep(20)
+            time.sleep(VIEWER_POLL_INTERVAL)
 
 
 def bot_worker():
     c.log('Bot Worker Started')
-    while True:
+    while not _shutdown_event.is_set():
         try:
             time.sleep(10)
             conf = c.load_config()
@@ -370,12 +376,20 @@ def bot_worker():
             time.sleep(60)
 
 
+_worker_threads = []
+
 def start_workers():
     conf = c.load_config()
-    threading.Thread(
-        target=viewer_worker_loop, args=(conf,), daemon=True
-    ).start()
-    threading.Thread(target=bot_worker, daemon=True).start()
-    threading.Thread(
-        target=irc_worker, args=(stats_lock, current_minute_stats), daemon=True
-    ).start()
+    _worker_threads.clear()
+    t1 = threading.Thread(target=viewer_worker_loop, args=(conf,), daemon=True, name='viewer-worker')
+    t2 = threading.Thread(target=bot_worker, daemon=True, name='bot-worker')
+    t3 = threading.Thread(target=irc_worker, args=(stats_lock, current_minute_stats), daemon=True, name='irc-worker')
+    for t in [t1, t2, t3]:
+        t.start()
+        _worker_threads.append(t)
+
+
+def shutdown_workers():
+    _shutdown_event.set()
+    for t in _worker_threads:
+        t.join(timeout=5)

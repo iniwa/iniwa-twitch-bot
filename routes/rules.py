@@ -8,19 +8,22 @@ bp = Blueprint('rules', __name__)
 def save_rules():
     conf = c.load_config()
     if 'game' in request.form:
-        conf['rules'] = [
-            {
-                "name": n, "game": g, "message": m,
-                "interval": int(i), "min_comments": int(mn)
-            }
-            for n, g, m, i, mn in zip(
-                request.form.getlist('name'),
-                request.form.getlist('game'),
-                request.form.getlist('message'),
-                request.form.getlist('interval'),
-                request.form.getlist('min_comments')
-            )
-        ]
+        try:
+            conf['rules'] = [
+                {
+                    "name": n, "game": g, "message": m,
+                    "interval": max(1, int(i)), "min_comments": max(0, int(mn))
+                }
+                for n, g, m, i, mn in zip(
+                    request.form.getlist('name'),
+                    request.form.getlist('game'),
+                    request.form.getlist('message'),
+                    request.form.getlist('interval'),
+                    request.form.getlist('min_comments')
+                )
+            ]
+        except (ValueError, TypeError):
+            return redirect(url_for('dashboard.index'))
     c.save_config(conf)
     return redirect(url_for('dashboard.index'))
 
@@ -41,12 +44,17 @@ def move_rule(idx, direction):
 @bp.route('/add_rule', methods=['POST'])
 def add_rule():
     conf = c.load_config()
+    try:
+        interval = max(1, int(request.form.get('interval', 15)))
+        min_comments = max(0, int(request.form.get('min_comments', 2)))
+    except (ValueError, TypeError):
+        return redirect(url_for('dashboard.index'))
     new_rule = {
         "name": request.form.get('name', f"ルール #{len(conf.get('rules', [])) + 1}"),
         "game": request.form.get('game', 'All'),
         "message": request.form.get('message', ''),
-        "interval": int(request.form.get('interval', 15)),
-        "min_comments": int(request.form.get('min_comments', 2))
+        "interval": interval,
+        "min_comments": min_comments
     }
     if 'rules' not in conf:
         conf['rules'] = []

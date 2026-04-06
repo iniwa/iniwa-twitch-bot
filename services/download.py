@@ -10,6 +10,8 @@ from services.storage import (
 )
 from services.twitch_api import get_headers
 
+AUTO_DOWNLOAD_DELAY = 300
+
 try:
     import yt_dlp
     YT_DLP_AVAILABLE = True
@@ -27,17 +29,18 @@ def get_download_progress():
 
 
 def request_cancel_download(stream_id):
-    c.log(f'⚠️ ダウンロード中止リクエスト: {stream_id}')
+    c.log(f'[WARN] ダウンロード中止リクエスト: {stream_id}')
     with c.download_lock:
         c.cancel_requests.add(stream_id)
 
-    idx = load_stream_index()
-    if stream_id in idx and idx[stream_id].get('vod_status') == 'downloading':
-        idx[stream_id]['vod_status'] = 'not_downloaded'
-        save_stream_index(idx)
-        with c.download_lock:
-            c.download_progress.pop(stream_id, None)
-        c.log(f'ℹ️ {stream_id} のステータスを強制リセットしました。')
+    with c.file_lock:
+        idx = load_stream_index()
+        if stream_id in idx and idx[stream_id].get('vod_status') == 'downloading':
+            idx[stream_id]['vod_status'] = 'not_downloaded'
+            save_stream_index(idx)
+    with c.download_lock:
+        c.download_progress.pop(stream_id, None)
+    c.log(f'[INFO] {stream_id} のステータスを強制リセットしました。')
 
 
 def delete_vod_file(stream_id):
@@ -49,11 +52,11 @@ def delete_vod_file(stream_id):
     if path and os.path.exists(path):
         try:
             os.remove(path)
-            c.log(f'🗑️ ファイルを削除しました: {path}')
+            c.log(f'[DEL] ファイルを削除しました: {path}')
         except OSError as e:
-            c.log(f'⚠️ ファイル削除失敗 (手動確認してください): {path} - {e}')
+            c.log(f'[WARN] ファイル削除失敗 (手動確認してください): {path} - {e}')
     else:
-        c.log('ℹ️ 削除対象のファイルが見つかりませんでしたが、ステータスをリセットします。')
+        c.log('[INFO] 削除対象のファイルが見つかりませんでしたが、ステータスをリセットします。')
 
     idx[stream_id]['vod_status'] = 'not_downloaded'
     idx[stream_id].pop('file_path', None)
@@ -97,15 +100,15 @@ def execute_download(conf, stream_id):
     idx_data = load_stream_index()
 
     if idx_data.get(stream_id, {}).get('vod_status') == 'downloaded':
-        c.log(f'ℹ️ {stream_id} は既にダウンロード済みです。')
+        c.log(f'[INFO] {stream_id} は既にダウンロード済みです。')
         return 'Already downloaded'
 
-    c.log(f'🔎 アーカイブ検索開始 (StreamID: {stream_id})...')
+    c.log(f'[SEARCH] アーカイブ検索開始 (StreamID: {stream_id})...')
     save_path = ARCHIVE_WAIT_DIR
 
     video_url, video_id = _find_video_url(conf, stream_id, idx_data)
     if not video_url:
-        c.log(f'⚠️ アーカイブが見つかりませんでした (StreamID: {stream_id})')
+        c.log(f'[WARN] アーカイブが見つかりませんでした (StreamID: {stream_id})')
         return 'Video not found'
 
     with c.file_lock:
@@ -152,7 +155,7 @@ def execute_download(conf, stream_id):
         'progress_hooks': [progress_hook]
     }
 
-    c.log(f'⬇️ ダウンロード開始: {video_id}')
+    c.log(f'[DL] ダウンロード開始: {video_id}')
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -167,13 +170,13 @@ def execute_download(conf, stream_id):
                 idx[stream_id]['file_path'] = final_filename
                 save_stream_index(idx)
 
-        c.log(f'✅ ダウンロード完了: {final_filename}')
+        c.log(f'[OK] ダウンロード完了: {final_filename}')
         with c.download_lock:
             c.download_progress.pop(stream_id, None)
         return 'Success'
 
     except DownloadCancelled:
-        c.log(f'🛑 ダウンロードを中止しました: {stream_id}')
+        c.log(f'[CANCEL] ダウンロードを中止しました: {stream_id}')
         with c.file_lock:
             idx = load_stream_index()
             if stream_id in idx:
@@ -183,7 +186,7 @@ def execute_download(conf, stream_id):
         return 'Result: Cancelled'
 
     except Exception as e:
-        c.log(f'❌ ダウンロード失敗: {e}')
+        c.log(f'[ERROR] ダウンロード失敗: {e}')
         with c.download_lock:
             if stream_id in c.download_progress:
                 c.download_progress[stream_id] = {'percent': 0, 'speed': 'Error', 'status': 'failed'}
@@ -197,14 +200,14 @@ def execute_download(conf, stream_id):
 
 
 def auto_download_task(conf, stream_id):
-    c.log('⏳ 配信終了検知: 5分後にアーカイブ検索を開始します...')
-    time.sleep(300)
+    c.log('[WAIT] 配信終了検知: 5分後にアーカイブ検索を開始します...')
+    time.sleep(AUTO_DOWNLOAD_DELAY)
     execute_download(conf, stream_id)
 
 
 def bulk_download_task(conf):
     idx = load_stream_index()
-    c.log('📦 未ダウンロードのアーカイブを一括処理します...')
+    c.log('[BULK] 未ダウンロードのアーカイブを一括処理します...')
     sorted_ids = sorted(idx.keys(), key=lambda k: idx[k].get('start_time', ''), reverse=True)
     count = 0
     for sid in sorted_ids:
@@ -217,4 +220,4 @@ def bulk_download_task(conf):
                 if sid in c.cancel_requests:
                     break
             time.sleep(5)
-    c.log(f'📦 一括処理完了: {count}件')
+    c.log(f'[BULK] 一括処理完了: {count}件')

@@ -9,6 +9,11 @@ from services.storage import ARCHIVE_WAIT_DIR, ARCHIVE_ENCODE_DIR
 bp = Blueprint('analytics', __name__)
 
 
+def _validate_stream_id(stream_id):
+    """stream_id がパストラバーサルを含まない安全な値か検証"""
+    return bool(stream_id and re.match(r'^[a-zA-Z0-9_-]+$', stream_id))
+
+
 @bp.route('/analytics')
 def analytics_list():
     index_file = 'data/history/stream_index.json'
@@ -114,6 +119,10 @@ def analytics_list():
 
 @bp.route('/analytics/stream/<stream_id>')
 def analytics_detail(stream_id):
+    if not _validate_stream_id(stream_id):
+        return render_template('analytics_detail.html', view='detail',
+                             stream_info={"title": "不正なID", "start_time": None},
+                             has_log_file=False)
     index_file = 'data/history/stream_index.json'
     stream_info = {"title": "不明", "start_time": None}
     if os.path.exists(index_file):

@@ -19,8 +19,11 @@ def save_config_route():
     conf = c.load_config()
 
     for k in ['client_id', 'access_token', 'broadcaster_id', 'bot_user_id', 'channel_name']:
-        conf[k] = request.form.get(k)
-    conf['broadcaster_token'] = request.form.get('broadcaster_token')
+        val = request.form.get(k, '').strip()
+        conf[k] = val
+
+    broadcaster_token = request.form.get('broadcaster_token', '').strip()
+    conf['broadcaster_token'] = broadcaster_token
     conf['debug_mode'] = 'debug_mode' in request.form
     conf['ignore_stream_status'] = 'ignore_stream_status' in request.form
     conf['enable_welcome'] = 'enable_welcome' in request.form

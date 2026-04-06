@@ -13,9 +13,9 @@ def add_preset():
     tweet_tags = request.form.get('tweet_tags', '').strip()
 
     conf['presets'].append({
-        "name": request.form['name'],
-        "game": request.form['game'],
-        "title": request.form['title'],
+        "name": request.form.get('name', ''),
+        "game": request.form.get('game', ''),
+        "title": request.form.get('title', ''),
         "tags": tags_list,
         "tweet_tags": tweet_tags
     })
@@ -35,7 +35,10 @@ def delete_preset(idx):
 
 @bp.route('/update_preset', methods=['POST'])
 def update_preset():
-    idx = int(request.form['preset_index'])
+    try:
+        idx = int(request.form['preset_index'])
+    except (ValueError, KeyError):
+        return redirect(url_for('dashboard.index'))
     conf = c.load_config()
     presets = conf.get('presets', [])
 
@@ -45,9 +48,9 @@ def update_preset():
         tweet_tags = request.form.get('tweet_tags', '').strip()
 
         presets[idx] = {
-            "name": request.form['name'],
-            "game": request.form['game'],
-            "title": request.form['title'],
+            "name": request.form.get('name', ''),
+            "game": request.form.get('game', ''),
+            "title": request.form.get('title', ''),
             "tags": tags_list,
             "tweet_tags": tweet_tags
         }
@@ -57,7 +60,10 @@ def update_preset():
 
 @bp.route('/apply_preset', methods=['POST'])
 def apply_preset():
-    idx = int(request.form['preset_index'])
+    try:
+        idx = int(request.form['preset_index'])
+    except (ValueError, KeyError):
+        return redirect(url_for('dashboard.index'))
     conf = c.load_config()
     presets = conf.get('presets', [])
     if 0 <= idx < len(presets):
@@ -72,6 +78,6 @@ def apply_preset():
 def test_message():
     conf = c.load_config()
     send_chat(conf, "【Botテスト】これはテスト送信です！")
-    c.log("Test Message Sent! ✅")
+    c.log("Test Message Sent")
     c.state.reset()
     return redirect(url_for('dashboard.index'))

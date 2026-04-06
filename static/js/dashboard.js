@@ -163,7 +163,7 @@ function updateTopBar(data) {
 // Dashboard polling (10s interval + immediate on load)
 // ============================================================
 function pollStatus() {
-    fetch('/api/status').then(function(r) { return r.json(); }).then(function(data) {
+    return fetch('/api/status').then(function(r) { return r.json(); }).then(function(data) {
         updateTopBar(data);
         updateMonitor(data);
         updateEventPanel(data.events);
@@ -171,7 +171,7 @@ function pollStatus() {
         var logContainer = document.getElementById('log-container');
         if (logContainer) {
             logContainer.innerHTML = data.logs.map(function(l) {
-                return '<div>' + l + '</div>';
+                return '<div>' + escHtml(l) + '</div>';
             }).join('');
         }
 
@@ -205,7 +205,7 @@ function pollStatus() {
 }
 
 function pollHistory() {
-    fetch('/api/history').then(function(r) { return r.json(); }).then(function(data) {
+    return fetch('/api/history').then(function(r) { return r.json(); }).then(function(data) {
         var table = document.getElementById('historyTable');
         var tbody = document.getElementById('history-tbody');
         if (!tbody || !table) return;
@@ -288,7 +288,13 @@ function initVerticalResize() {
 }
 
 // Start polling
-setInterval(function() { pollStatus(); pollHistory(); }, 10000);
+(function schedulePoll() {
+    setTimeout(function() {
+        Promise.all([pollStatus(), pollHistory()])
+            .catch(function() {})
+            .finally(schedulePoll);
+    }, 10000);
+})();
 // Initial load (runs after DOMContentLoaded via common.js layout restore, but initLayoutM also calls pollStatus)
 document.addEventListener('DOMContentLoaded', function() {
     pollStatus();

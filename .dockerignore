@@ -5,3 +5,13 @@ data/
 LICENSE
 README.md
 __pycache__
+.git
+.github
+.serena
+.claude
+.vscode
+CLAUDE.md
+CLAUDE_ja.md
+*.pyc
+*.pyo
+docs/

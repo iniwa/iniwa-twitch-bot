@@ -7,6 +7,16 @@ from services.twitch_api import get_channel_info_by_id, search_games
 bp = Blueprint('dashboard', __name__)
 
 
+def _get_ignored_filters(conf):
+    """無視対象のユーザーID/ログインを返す"""
+    ignored_ids = (
+        [conf.get('broadcaster_id'), conf.get('bot_user_id')]
+        if conf.get('hide_self_bot') else []
+    )
+    ignored_logins = set(conf.get('ignored_users', []))
+    return ignored_ids, ignored_logins
+
+
 def _timestamp_to_date(ts):
     if not ts:
         return '-'
@@ -83,11 +93,7 @@ def get_history_api_data():
     conf = c.load_config()
     db = c.load_viewers()
     active_uids = set(c.current_session_viewers.keys())
-    ignored_ids = (
-        [conf.get('broadcaster_id'), conf.get('bot_user_id')]
-        if conf.get('hide_self_bot') else []
-    )
-    ignored_logins = set(conf.get('ignored_users', []))
+    ignored_ids, ignored_logins = _get_ignored_filters(conf)
 
     data_list = []
     for uid, v in db.items():
@@ -136,11 +142,7 @@ def get_active_viewers_data():
     conf = c.load_config()
     db = c.load_viewers()
     now = c.get_now()
-    ignored_ids = (
-        [conf.get('broadcaster_id'), conf.get('bot_user_id')]
-        if conf.get('hide_self_bot') else []
-    )
-    ignored_logins = set(conf.get('ignored_users', []))
+    ignored_ids, ignored_logins = _get_ignored_filters(conf)
 
     active_viewers = []
     for uid, info in c.current_session_viewers.items():
@@ -172,11 +174,7 @@ def index():
     conf = c.load_config()
     db = c.load_viewers()
     active_viewers = get_active_viewers_data()
-    ignored_ids = (
-        [conf.get('broadcaster_id'), conf.get('bot_user_id')]
-        if conf.get('hide_self_bot') else []
-    )
-    ignored_logins = set(conf.get('ignored_users', []))
+    ignored_ids, ignored_logins = _get_ignored_filters(conf)
     active_uids = set(c.current_session_viewers.keys())
     filtered_history = {
         k: v for k, v in db.items()
@@ -261,5 +259,5 @@ def api_search_games():
         conf = c.load_config()
         return jsonify(search_games(conf, q))
     except Exception as e:
-        c.log(f'⚠️ ゲーム検索エラー: {e}')
+        c.log(f'[WARN] ゲーム検索エラー: {e}')
         return jsonify([]), 500

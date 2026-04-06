@@ -63,7 +63,7 @@ def handle_privmsg(line, tags, nick, sock, conf, stats_lock, current_minute_stat
                 'user_id': tags.get('user-id'),
                 'amount': bits
             })
-            c.log(f'💰 Cheer! {display_name}: {bits} bits')
+            c.log(f'[Cheer] Cheer! {display_name}: {bits} bits')
             c.log_event({'type': 'bits', 'user': display_name, 'amount': bits})
 
         # チャンネルポイント
@@ -122,7 +122,7 @@ def handle_usernotice(tags, stats_lock, current_minute_stats):
                 'user_id': uid, 'plan': plan_name,
                 'months': months, 'msg_id': msg_id
             })
-            c.log(f'🎉 Sub! {display_name} ({plan_name}, {months}ヶ月)')
+            c.log(f'[Sub] Sub! {display_name} ({plan_name}, {months}ヶ月)')
             c.log_event({
                 'type': 'sub', 'user': display_name,
                 'plan': plan_name, 'months': months,
@@ -140,7 +140,7 @@ def handle_usernotice(tags, stats_lock, current_minute_stats):
                 'recipient_id': recipient_id,
                 'plan': plan_name
             })
-            c.log(f'🎁 Gift Sub! {display_name} → {recipient} ({plan_name})')
+            c.log(f'[Gift] Gift Sub! {display_name} → {recipient} ({plan_name})')
             c.log_event({
                 'type': 'subgift', 'user': display_name,
                 'recipient': recipient, 'plan': plan_name
@@ -152,7 +152,7 @@ def handle_usernotice(tags, stats_lock, current_minute_stats):
                 'type': 'submysterygift', 'user': display_name,
                 'user_id': uid, 'count': gift_count
             })
-            c.log(f'🎁 Mystery Gift! {display_name} ({gift_count}人分)')
+            c.log(f'[Gift] Mystery Gift! {display_name} ({gift_count}人分)')
             c.log_event({
                 'type': 'submysterygift', 'user': display_name,
                 'count': gift_count
@@ -167,7 +167,7 @@ def handle_usernotice(tags, stats_lock, current_minute_stats):
                 'type': 'raid', 'user': display_name,
                 'user_id': uid, 'count': viewer_count
             })
-            c.log(f'🚨 Raid! {display_name} ({viewer_count} viewers)')
+            c.log(f'[Raid] Raid! {display_name} ({viewer_count} viewers)')
             c.log_event({
                 'type': 'raid', 'user': display_name,
                 'count': viewer_count
