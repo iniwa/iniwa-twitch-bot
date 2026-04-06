@@ -59,10 +59,12 @@ def update_preset():
 def apply_preset():
     idx = int(request.form['preset_index'])
     conf = c.load_config()
-    p = conf['presets'][idx]
-    update_channel_info(conf, p['game'], p['title'], p.get('tags', []))
-    conf['current_tweet_tags'] = p.get('tweet_tags', '')
-    c.save_config(conf)
+    presets = conf.get('presets', [])
+    if 0 <= idx < len(presets):
+        p = presets[idx]
+        update_channel_info(conf, p['game'], p['title'], p.get('tags', []))
+        conf['current_tweet_tags'] = p.get('tweet_tags', '')
+        c.save_config(conf)
     return redirect(url_for('dashboard.index'))
 
 

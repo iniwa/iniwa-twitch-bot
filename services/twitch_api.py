@@ -141,14 +141,17 @@ def get_game_id(conf, game_name):
 
 
 def search_games(conf, query):
-    r = requests.get(
-        "https://api.twitch.tv/helix/search/categories",
-        headers=get_headers(conf),
-        params={"query": query, "first": 10},
-        timeout=5
-    )
-    if r.status_code == 200:
-        return r.json().get('data', [])
+    try:
+        r = requests.get(
+            'https://api.twitch.tv/helix/search/categories',
+            headers=get_headers(conf),
+            params={'query': query, 'first': 10},
+            timeout=5
+        )
+        if r.status_code == 200:
+            return r.json().get('data', [])
+    except (requests.RequestException, KeyError, ValueError):
+        pass
     return []
 
 

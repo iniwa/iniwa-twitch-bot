@@ -186,13 +186,17 @@ function pollStatus() {
                 tb.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-secondary);">\u73FE\u5728\u306A\u3057 / \u30AA\u30D5\u30E9\u30A4\u30F3</td></tr>';
             } else {
                 tb.innerHTML = data.viewers.map(function(v) {
+                    var followHtml = v.is_follower
+                        ? '<span class="follow-status">\u2705</span> <span style="font-size:0.75em; color:#888;">' + escHtml(v.followed_at || '') + '</span>'
+                        : '-';
+                    var memoEsc = escHtml(v.memo || '');
                     return '<tr>' +
-                        '<td><b>' + v.name + '</b></td>' +
-                        '<td>' + v.follow_status + '</td>' +
-                        '<td>' + v.duration + '</td>' +
+                        '<td><b>' + escHtml(v.name) + '</b></td>' +
+                        '<td>' + followHtml + '</td>' +
+                        '<td>' + escHtml(v.duration) + '</td>' +
                         '<td>' + v.total + '\u56DE</td>' +
-                        '<td><button class="btn-memo" title="' + v.memo.replace(/"/g, '&quot;') + '" onclick="openMemoModal(\'' + v.uid + '\', \'' + v.name + '\', \'' + v.memo.replace(/'/g, "\\'") + '\')">\uD83D\uDCDD</button></td>' +
-                        '<td><button class="btn-so" onclick="shoutout(\'' + v.login + '\', \'' + v.name + '\')">SO</button></td>' +
+                        '<td><button class="btn-memo" title="' + memoEsc + '" onclick="openMemoModal(\'' + escHtml(v.uid) + '\', \'' + escHtml(v.name) + '\', \'' + memoEsc.replace(/'/g, "\\'") + '\')">\uD83D\uDCDD</button></td>' +
+                        '<td><button class="btn-so" onclick="shoutout(\'' + escHtml(v.login) + '\', \'' + escHtml(v.name) + '\')">SO</button></td>' +
                         '</tr>';
                 }).join('');
             }
@@ -212,22 +216,26 @@ function pollHistory() {
             if (headers[i].classList.contains('desc')) { sortIdx = i; sortDir = 'desc'; break; }
         }
         tbody.innerHTML = data.map(function(v) {
+            var memoEsc = escHtml(v.memo || '');
+            var lastSeenHtml = v.is_active
+                ? '<span class="watching-status">\u8996\u8074\u4E2D</span>'
+                : escHtml(v.last_seen_str || '-');
             return '<tr>' +
-                '<td>' + v.name + ' <br><span style="font-size:0.8em; color:var(--text-secondary);">(' + v.login + ')</span></td>' +
+                '<td>' + escHtml(v.name) + ' <br><span style="font-size:0.8em; color:var(--text-secondary);">(' + escHtml(v.login) + ')</span></td>' +
                 '<td data-sort="' + v.follow_sort + '">' + (v.is_follower
-                    ? '<div class="follow-status">\u2705</div><div style="font-size:0.75em; color:var(--text-secondary);">' + v.followed_at + '~</div>'
+                    ? '<div class="follow-status">\u2705</div><div style="font-size:0.75em; color:var(--text-secondary);">' + escHtml(v.followed_at) + '~</div>'
                     : '-') + '</td>' +
                 '<td data-sort="' + v.total_visits + '">' + v.total_visits + '\u56DE</td>' +
-                '<td data-sort="' + v.total_duration_raw + '">' + v.total_duration + '</td>' +
+                '<td data-sort="' + v.total_duration_raw + '">' + escHtml(v.total_duration) + '</td>' +
                 '<td data-sort="' + v.total_comments + '">' + v.total_comments + '\u56DE</td>' +
                 '<td data-sort="' + v.total_bits + '" class="' + (v.total_bits ? 'bits-count' : '') + '">' + v.total_bits + '</td>' +
                 '<td data-sort="' + (v.is_sub ? 1 : 0) + '" class="' + (v.is_sub ? 'sub-active' : '') + '">' + (v.is_sub ? '\u2B50' : '-') + '</td>' +
                 '<td data-sort="' + (v.total_sub_months || 0) + '">' + (v.total_sub_months ? v.total_sub_months : '-') + '</td>' +
                 '<td data-sort="' + (v.total_gifts_given || 0) + '">' + (v.total_gifts_given ? '\uD83C\uDF81' + v.total_gifts_given : '-') + '</td>' +
                 '<td data-sort="' + v.streak + '">' + (v.streak > 1 ? '\uD83D\uDD25' + v.streak : '-') + '</td>' +
-                '<td><div class="memo-text">' + v.memo + '</div>' +
-                '<button class="btn-memo" onclick="openMemoModal(\'' + v.uid + '\', \'' + v.name + '\', \'' + v.memo_esc + '\')">\uD83D\uDCDD</button></td>' +
-                '<td data-sort="' + v.last_seen_sort + '">' + v.last_seen_str + '</td>' +
+                '<td><div class="memo-text">' + memoEsc + '</div>' +
+                '<button class="btn-memo" onclick="openMemoModal(\'' + escHtml(v.uid) + '\', \'' + escHtml(v.name) + '\', \'' + memoEsc.replace(/'/g, "\\'") + '\')">\uD83D\uDCDD</button></td>' +
+                '<td data-sort="' + v.last_seen_sort + '">' + lastSeenHtml + '</td>' +
                 '</tr>';
         }).join('');
         if (sortIdx !== -1 && sortDir) {

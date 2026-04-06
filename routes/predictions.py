@@ -20,9 +20,9 @@ def add_prediction_preset():
         return redirect(url_for('dashboard.index'))
 
     conf['prediction_presets'].append({
-        "title": request.form['title'],
-        "outcomes": outcomes,
-        "duration": int(request.form['duration'])
+        'title': request.form.get('title', ''),
+        'outcomes': outcomes,
+        'duration': int(request.form.get('duration', 120))
     })
     c.save_config(conf)
     return redirect(url_for('dashboard.index'))
@@ -31,7 +31,10 @@ def add_prediction_preset():
 @bp.route('/update_prediction_preset', methods=['POST'])
 def update_prediction_preset():
     conf = c.load_config()
-    idx = int(request.form['preset_index'])
+    try:
+        idx = int(request.form['preset_index'])
+    except (ValueError, KeyError):
+        return redirect(url_for('dashboard.index'))
 
     raw_outcomes = request.form.getlist('outcomes')
     outcomes = [o.strip() for o in raw_outcomes if o.strip()]
@@ -39,9 +42,9 @@ def update_prediction_preset():
     presets = conf.get('prediction_presets', [])
     if 0 <= idx < len(presets) and len(outcomes) >= 2:
         presets[idx] = {
-            "title": request.form['title'],
-            "outcomes": outcomes,
-            "duration": int(request.form['duration'])
+            'title': request.form.get('title', ''),
+            'outcomes': outcomes,
+            'duration': int(request.form.get('duration', 120))
         }
         c.save_config(conf)
     return redirect(url_for('dashboard.index'))
@@ -60,7 +63,11 @@ def delete_prediction_preset(idx):
 @bp.route('/start_prediction', methods=['POST'])
 def start_prediction():
     conf = c.load_config()
-    idx = int(request.form['preset_index'])
+    try:
+        idx = int(request.form['preset_index'])
+    except (ValueError, KeyError):
+        return redirect(url_for('dashboard.index'))
+
     presets = conf.get('prediction_presets', [])
     if 0 <= idx < len(presets):
         preset = presets[idx]
@@ -71,8 +78,11 @@ def start_prediction():
 @bp.route('/resolve_prediction', methods=['POST'])
 def resolve_prediction_route():
     conf = c.load_config()
-    pid = request.form['prediction_id']
+    pid = request.form.get('prediction_id')
     oid = request.form.get('winning_outcome_id')
+
+    if not pid:
+        return redirect(url_for('dashboard.index'))
 
     if oid:
         resolve_prediction(conf, pid, oid)

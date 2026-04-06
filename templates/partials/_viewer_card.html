@@ -25,7 +25,7 @@
                     {% for viewer in active_viewers %}
                     <tr>
                         <td><b>{{ viewer.name }}</b></td>
-                        <td>{{ viewer.follow_status|safe }}</td>
+                        <td>{% if viewer.is_follower %}<span class="follow-status">✅</span> <span style="font-size:0.75em; color:#888;">{{ viewer.followed_at }}</span>{% else %}-{% endif %}</td>
                         <td>{{ viewer.duration }}</td>
                         <td>{{ viewer.total }}回</td>
                         <td>

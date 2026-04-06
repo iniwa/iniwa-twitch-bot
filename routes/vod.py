@@ -6,6 +6,7 @@ from services.download import (
     request_cancel_download, delete_vod_file, get_download_progress
 )
 from services.storage import load_stream_index, save_stream_index
+from services.twitch_api import sync_vod_history
 
 bp = Blueprint('vod', __name__)
 
@@ -62,7 +63,6 @@ def update_stream_info():
 
 @bp.route('/force_sync_history', methods=['POST'])
 def force_sync_history():
-    from services.twitch_api import sync_vod_history
     conf = c.load_config()
-    threading.Thread(target=sync_vod_history, args=(conf, True)).start()
+    threading.Thread(target=sync_vod_history, args=(conf, True), daemon=True).start()
     return redirect(url_for('analytics.analytics_list'))

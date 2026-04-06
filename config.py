@@ -6,12 +6,16 @@ from datetime import datetime, timedelta, timezone
 CONFIG_FILE = 'data/config.json'
 VIEWERS_FILE = 'data/viewers.json'
 
-logs = []
 MAX_LOGS = 50
-
-# イベントログ (フォロー, サブスク, ギフト, レイド等)
-events = []
 MAX_EVENTS = 200
+
+# JST (日本標準時) の定義
+JST = timezone(timedelta(hours=9))
+
+# スレッド安全なリストとロック
+logs = []
+events = []
+_log_lock = threading.Lock()
 
 rule_last_executed = {}
 rule_last_comment_count = {}
@@ -19,15 +23,33 @@ current_session_viewers = {}
 current_stream_id = None
 current_game = None
 
-# JST (日本標準時) の定義
-JST = timezone(timedelta(hours=9))
-
 file_lock = threading.RLock()
 download_lock = threading.Lock()
 
-# Download state (protected by download_lock)
+# ダウンロード状態 (download_lock で保護)
 download_progress = {}
 cancel_requests = set()
+
+
+DEFAULT_LAYOUT = {
+    'columns': 2,
+    'max_width': 1400,
+    'cards': {
+        'viewers': {'span': 1, 'height': 400, 'order': 1},
+        'presets': {'span': 1, 'height': 400, 'order': 2},
+        'prediction': {'span': 1, 'height': 400, 'order': 3},
+        'rules': {'span': 2, 'height': 0, 'order': 4},
+        'logs': {'span': 2, 'height': 200, 'order': 5}
+    }
+}
+
+DEFAULT_CONFIG = {
+    'client_id': '', 'access_token': '', 'broadcaster_id': '',
+    'bot_user_id': '', 'channel_name': '',
+    'is_running': False, 'rules': [], 'presets': [],
+    'prediction_presets': [],
+    'layout': DEFAULT_LAYOUT
+}
 
 
 class ThreadSafeCounter:
@@ -52,20 +74,20 @@ state = ThreadSafeCounter()
 
 
 def log(message):
-    global logs
     print(message)
-    logs.insert(0, message)
-    if len(logs) > MAX_LOGS:
-        logs.pop()
+    with _log_lock:
+        logs.insert(0, message)
+        if len(logs) > MAX_LOGS:
+            logs.pop()
 
 
 def log_event(event):
     """イベントログに追加 (サブスク, ギフト, レイド, フォロー等)"""
-    global events
-    event["timestamp"] = get_now().isoformat()
-    events.insert(0, event)
-    if len(events) > MAX_EVENTS:
-        events.pop()
+    event['timestamp'] = get_now().isoformat()
+    with _log_lock:
+        events.insert(0, event)
+        if len(events) > MAX_EVENTS:
+            events.pop()
 
 
 def get_now():
@@ -95,51 +117,26 @@ def save_viewers(data):
             json.dump(data, f, indent=4, ensure_ascii=False)
 
 
+def _deep_merge(base, override):
+    """base の構造をデフォルトとして、override の値で上書きマージする"""
+    merged = base.copy()
+    for key, val in override.items():
+        if key in merged and isinstance(merged[key], dict) and isinstance(val, dict):
+            merged[key] = _deep_merge(merged[key], val)
+        else:
+            merged[key] = val
+    return merged
+
+
 def load_config():
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    default_conf = {
-        "client_id": "", "access_token": "", "broadcaster_id": "",
-        "bot_user_id": "", "channel_name": "",
-        "is_running": False, "rules": [], "presets": [],
-        "prediction_presets": [],
-        "layout": {
-            "columns": 2,
-            "max_width": 1400,
-            "cards": {
-                "viewers": {"span": 1, "height": 400, "order": 1},
-                "presets": {"span": 1, "height": 400, "order": 2},
-                "prediction": {"span": 1, "height": 400, "order": 3},
-                "rules": {"span": 2, "height": 0, "order": 4},
-                "logs": {"span": 2, "height": 200, "order": 5}
-            }
-        }
-    }
+    os.makedirs('data', exist_ok=True)
 
     if not os.path.exists(CONFIG_FILE):
-        return default_conf
+        return DEFAULT_CONFIG.copy()
     try:
         with file_lock:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 saved = json.load(f)
-
-                for k, v in default_conf.items():
-                    if k not in saved:
-                        saved[k] = v
-
-                if "layout" not in saved:
-                    saved["layout"] = default_conf["layout"]
-                else:
-                    if "cards" not in saved["layout"]:
-                        saved["layout"]["cards"] = default_conf["layout"]["cards"]
-                    for ck, cv in default_conf["layout"]["cards"].items():
-                        if ck not in saved["layout"]["cards"]:
-                            saved["layout"]["cards"][ck] = cv
-                        else:
-                            for field, val in cv.items():
-                                if field not in saved["layout"]["cards"][ck]:
-                                    saved["layout"]["cards"][ck][field] = val
-
-                return saved
+                return _deep_merge(DEFAULT_CONFIG, saved)
     except (json.JSONDecodeError, OSError):
-        return default_conf
+        return DEFAULT_CONFIG.copy()
