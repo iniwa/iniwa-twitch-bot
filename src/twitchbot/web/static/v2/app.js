@@ -90,9 +90,10 @@
   };
   const revalidate=async(url,shownHtml,token)=>{
     try{
-      const parsed=await fetchPage(url,token),fresh=cache.get(normalized(parsed.url));
-      if(token===generation&&fresh?.html!==shownHtml)showRefreshNotice();
-    }catch(error){if(error.name!=="AbortError"&&error.message!=="stale_navigation")showRefreshNotice("最新の状態を確認できませんでした。 ");}
+      const parsed=await fetchPage(url,token),shown=parse(shownHtml,url);
+      // Compare parsed page content, not raw HTML against browser serialization.
+      if(token===generation&&(parsed.title!==shown.title||parsed.root.outerHTML!==shown.root.outerHTML))showRefreshNotice();
+    }catch(error){if(token===generation&&error.name!=="AbortError"&&error.message!=="stale_navigation")showRefreshNotice("最新の状態を確認できませんでした。 ");}
   };
   async function navigate(value,{mode="push",restore=false}={}){
     const url=new URL(value,location.href);if(!supported(url)||!currentSupported()){location.assign(url.href);return;}
@@ -125,8 +126,9 @@
 
   window.IniwaApp={register(name,factory){modules.set(name,factory);if(ready&&pageFamily(currentMain())===name)mount(currentMain());}};
   document.addEventListener("DOMContentLoaded",()=>{
-    ready=true;history.replaceState({iniwa:true},"",location.href);mount(currentMain());
+    // Cache the server-rendered DOM before modules set disabled states, text or drafts.
     if(currentSupported())cachePut(normalized(new URL(displayedUrl)),{html:`<!doctype html>${document.documentElement.outerHTML}`,url:displayedUrl,fetchedAt:Date.now()});
+    ready=true;history.replaceState({iniwa:true},"",location.href);mount(currentMain());
   });
   document.addEventListener("click",event=>{const url=eligibleLink(event);if(!url)return;event.preventDefault();navigate(url);});
   document.addEventListener("submit",event=>{
