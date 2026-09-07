@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>配信履歴 · Iniwa</title>
+  <link rel="stylesheet" href="{{ url_for('v2_live.static', filename='v2/app.css') }}">
+  <script defer src="{{ url_for('v2_live.static', filename='v2/app.js') }}"></script>
+  <script defer src="{{ url_for('v2_live.static', filename='v2/history.js') }}"></script>
+</head>
+<body>
+{% set active_nav = 'history' %}{% include 'v2/_nav.html' %}
+<main data-page="history-{{ kind }}">
+{% if legacy_archives_available %}<p><a href="/analytics">旧Botの配信履歴・VODを開く</a> — 移行保留のチャットやアクティビティもこちらで確認できます。</p>{% endif %}
+  <header><div><p class="eyebrow">STREAM HISTORY</p><h1>{{ '配信の比較' if kind == 'compare' else '配信の振り返り' if kind == 'detail' else '配信履歴' }}</h1></div><a href="{{ url_for('v2_history.history_page') }}">履歴一覧</a></header>
+  {% if error %}
+  <section role="status"><h2>履歴を表示できません</h2><p>{{ '履歴の保存先がまだ接続されていません。' if error == 'history_unavailable' else '配信が見つかりません。' if error == 'stream_not_found' else 'データ量が表示上限を超えています。' if error == 'history_limit_exceeded' else '配信の選択や指定した期間を確認してください。' }}</p></section>
+  {% else %}
+  <p class="muted">平均同接は、取得できた時間だけで計算しています。欠測を0人として扱いません。</p>
+  {% if kind == 'list' %}
+  <form action="{{ url_for('v2_history.history_page') }}" method="get" class="toolbar"><label>並び順<select name="sort"><option value="started_at" {{ 'selected' if data.sort == 'started_at' }}>開始日時</option><option value="average_viewers" {{ 'selected' if data.sort == 'average_viewers' }}>平均同接</option><option value="max_viewers" {{ 'selected' if data.sort == 'max_viewers' }}>最大同接</option><option value="coverage_ratio" {{ 'selected' if data.sort == 'coverage_ratio' }}>記録率</option></select></label><label>方向<select name="order"><option value="desc" {{ 'selected' if data.order == 'desc' }}>新しい／大きい順</option><option value="asc" {{ 'selected' if data.order == 'asc' }}>古い／小さい順</option></select></label><button>並べ替える</button></form>
+  <form action="{{ url_for('v2_history.compare_page') }}" method="get" id="compare-form">
+    <div class="toolbar"><p>{{ data['items']|length }}件の配信</p><button type="submit">選んだ2件を比較</button></div>
+    <p id="selection-hint" class="muted">比較する配信を2件選択してください。</p>
+    <div class="table-scroll"><table><thead><tr><th>比較</th><th aria-sort="{{ ('ascending' if data.order == 'asc' else 'descending') if data.sort == 'started_at' else 'none' }}"><a href="{{ url_for('v2_history.history_page',sort='started_at',order=('asc' if data.sort == 'started_at' and data.order == 'desc' else 'desc')) }}">配信</a></th><th aria-sort="{{ ('ascending' if data.order == 'asc' else 'descending') if data.sort == 'average_viewers' else 'none' }}"><a href="{{ url_for('v2_history.history_page',sort='average_viewers',order=('asc' if data.sort == 'average_viewers' and data.order == 'desc' else 'desc')) }}">平均同接</a></th><th aria-sort="{{ ('ascending' if data.order == 'asc' else 'descending') if data.sort == 'max_viewers' else 'none' }}"><a href="{{ url_for('v2_history.history_page',sort='max_viewers',order=('asc' if data.sort == 'max_viewers' and data.order == 'desc' else 'desc')) }}">最大同接</a></th><th aria-sort="{{ ('ascending' if data.order == 'asc' else 'descending') if data.sort == 'coverage_ratio' else 'none' }}"><a href="{{ url_for('v2_history.history_page',sort='coverage_ratio',order=('asc' if data.sort == 'coverage_ratio' and data.order == 'desc' else 'desc')) }}">記録率</a></th></tr></thead><tbody>
+    {% for item in data['items'] %}
+    <tr><td><input type="checkbox" name="id" value="{{ item.id }}" aria-label="{{ item.title }}を比較"></td><td><a href="{{ url_for('v2_history.detail_page', stream_id=item.id) }}">{{ item.title or 'タイトルなし' }}</a><small><time datetime="{{ item.started_at }}">{{ item.started_at }}</time> · {{ item.game_name or 'カテゴリー未記録' }}</small></td><td>{{ '%.1f'|format(item.average_viewers) if item.average_viewers is not none else '—' }}</td><td>{{ item.max_viewers if item.max_viewers is not none else '—' }}</td><td>{{ '%.0f%%'|format(item.coverage_ratio * 100) if item.coverage_ratio is not none else '不明' }}{% if item.end_precision == 'estimated' %}<small>終了時刻は推定</small>{% endif %}{% if item.quality == 'no_observations' %}<small>新方式の観測なし</small>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="5">配信履歴はまだありません。</td></tr>{% endfor %}
+    </tbody></table></div>
+  </form>
+  {% if data.next_cursor_token %}<p><a href="{{ url_for('v2_history.history_page', cursor=data.next_cursor_token, sort=data.sort, order=data.order) }}">次の配信を表示 →</a></p>{% endif %}
+  {% else %}
+  {% if kind == 'detail' %}
+  <form class="toolbar" method="get" id="range-form"><label>開始（JST）<input type="datetime-local" step="1" data-range="start" required></label><label>終了（JST）<input type="datetime-local" step="1" data-range="end" required></label><input type="hidden" name="start"><input type="hidden" name="end"><button>期間を絞る</button></form>
+  {% endif %}
+  {% if kind == 'compare' %}
+  <form class="toolbar" method="get">{% for item in data['items'] %}<input type="hidden" name="id" value="{{ item.id }}">{% endfor %}<label>比較する期間 <select name="scope"><option value="full" {{ 'selected' if data.scope == 'full' }}>配信全体</option><option value="common" {{ 'selected' if data.scope == 'common' }}>共通の経過時間</option></select></label><button>切り替える</button></form>
+  <p>平均同接の差（2件目 − 1件目）：<strong>{{ '%+.1f'|format(data.average_difference) if data.average_difference is not none else '—' }}</strong></p>
+  {% endif %}
+  <div class="cards {{ 'comparison' if kind == 'compare' }}">
+  {% for item in (data['items'] if kind == 'compare' else [data]) %}
+  <section>
+    <h2>{{ item.title or 'タイトルなし' }}</h2><p class="muted"><time datetime="{{ item.started_at }}">{{ item.started_at }}</time> · {{ item.game_name or 'カテゴリー未記録' }}</p>
+    <p><a href="{{ url_for('v2_community.events_page',stream_id=item.id) }}">配信中のイベント</a> · <a href="{{ url_for('v2_community.community_page',stream_id=item.id) }}">参加した人</a> · <a href="{{ url_for('v2_community.chats_page',stream_id=item.id) }}">チャット</a></p>
+    <dl class="metrics"><div><dt>平均同接</dt><dd>{{ '%.1f'|format(item.average_viewers) if item.average_viewers is not none else '—' }}<small>人</small></dd></div><div><dt>最大同接</dt><dd>{{ item.max_viewers if item.max_viewers is not none else '—' }}<small>人</small></dd></div><div><dt>記録率</dt><dd>{{ '%.0f'|format(item.coverage_ratio * 100) if item.coverage_ratio is not none else '—' }}<small>%</small></dd></div></dl>
+    <p class="muted">{{ '終了時刻を確認済み' if item.end_precision == 'confirmed' else '終了時刻は推定・記録率も参考値' if item.end_precision == 'estimated' else '終了時刻の確かさが不明なため、記録率は表示しません' }}</p>
+    <div class="viewer-chart" data-index="{{ loop.index0 }}" aria-label="同接推移グラフ"></div>
+    <p class="muted">横軸：配信開始からの経過時間／空白：観測できていない時間</p>
+    {% if item.peak_at %}<p>最大同接の観測：<time datetime="{{ item.peak_at }}">{{ item.peak_at }}</time></p>{% endif %}
+    {% if item.legacy_metrics.average_viewers is not none or item.legacy_metrics.max_viewers is not none %}<details><summary>旧方式で保存された集計</summary><p>平均 {{ item.legacy_metrics.average_viewers if item.legacy_metrics.average_viewers is not none else '—' }}人 ／ 最大 {{ item.legacy_metrics.max_viewers if item.legacy_metrics.max_viewers is not none else '—' }}人</p><p>旧集計は新しい時間加重平均と分けて表示しています。</p></details>{% endif %}
+    <small class="muted">集計時点：<time datetime="{{ item.as_of }}">{{ item.as_of }}</time></small>
+  </section>
+  {% endfor %}</div>
+  <script type="application/json" id="history-data">{{ (data['items'] if kind == 'compare' else [data])|tojson }}</script>
+  {% endif %}
+  {% endif %}
+</main>
+</body></html>

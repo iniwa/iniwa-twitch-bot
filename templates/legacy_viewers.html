@@ -1,0 +1,7 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>旧Botの視聴者・フォロワー履歴</title>
+<link rel="stylesheet" href="{{ url_for('v2_live.static',filename='v2/history.css') }}"></head><body>
+<nav><a href="/v2/control">ライブ</a><a href="/v2/community">コミュニティ</a><a href="/analytics">旧配信履歴・VOD</a></nav>
+<main><h1>旧Botの視聴者・フォロワー履歴</h1><p>切替前に旧Botが記録した情報です。切替後の出来事は新しいコミュニティ画面で確認できます。</p>
+<table><thead><tr><th>名前</th><th>フォロー状態</th><th>フォロー日</th><th>最終確認</th><th>訪問回数</th><th>コメント</th><th>メモ</th></tr></thead><tbody>
+{% for person in people %}<tr><td>{{ person.name or person.login }}</td><td>{{ 'フォロー中' if person.is_follower else '未フォロー' }}</td><td>{{ person.followed_at or '—' }}</td><td>{{ person.last_seen_str or '—' }}</td><td>{{ person.total_visits }}</td><td>{{ person.total_comments }}</td><td>{{ person.memo }}</td></tr>{% endfor %}
+</tbody></table></main></body></html>

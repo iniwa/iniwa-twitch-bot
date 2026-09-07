@@ -1,4 +1,4 @@
-from flask import Blueprint, redirect, url_for, jsonify, request
+from flask import Blueprint, redirect, url_for, jsonify, request, current_app
 import re
 import threading
 import config as c
@@ -10,6 +10,11 @@ from services.storage import load_stream_index, save_stream_index
 from services.twitch_api import sync_vod_history
 
 bp = Blueprint('vod', __name__)
+
+
+def _configuration():
+    provider = current_app.extensions.get('twitchbot.vod_configuration')
+    return provider() if provider is not None else c.load_config()
 
 
 def _validate_stream_id(stream_id):
@@ -25,14 +30,14 @@ def api_download_progress():
 def download_vod_manual(stream_id):
     if not _validate_stream_id(stream_id):
         return redirect(url_for('analytics.analytics_list'))
-    conf = c.load_config()
+    conf = _configuration()
     threading.Thread(target=execute_download, args=(conf, stream_id), daemon=True).start()
     return redirect(url_for('analytics.analytics_list'))
 
 
 @bp.route('/download_all_vods', methods=['POST'])
 def download_all_vods():
-    conf = c.load_config()
+    conf = _configuration()
     threading.Thread(target=bulk_download_task, args=(conf,), daemon=True).start()
     return redirect(url_for('analytics.analytics_list'))
 
@@ -77,6 +82,6 @@ def update_stream_info():
 
 @bp.route('/force_sync_history', methods=['POST'])
 def force_sync_history():
-    conf = c.load_config()
+    conf = _configuration()
     threading.Thread(target=sync_vod_history, args=(conf, True), daemon=True).start()
     return redirect(url_for('analytics.analytics_list'))

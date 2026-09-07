@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from hashlib import sha256
 import json
 import math
@@ -22,7 +22,8 @@ from ..adapters.persistence.migrations import MIGRATIONS
 from ..application.persistence import PersistenceError
 from .inspector import InspectionError, InspectionReport, LegacySourceInspector, _STREAM, _json
 
-_VERSION = "candidate-importer-v1"
+_VERSION = "candidate-importer-v2"
+_VIEWER_COLUMNS = 'user_id,login,display_name,followed_at,unfollowed_at,visit_count,watch_seconds,comment_count,bits_total,is_subscriber,sub_months,gifts_given,gifts_received,streak,last_sub_at,last_sub_plan,last_seen_at,last_stream_id,note,legacy_metadata_json'
 
 
 class CandidateImportError(RuntimeError):
@@ -73,6 +74,25 @@ def _aware(value: object, *, epoch: bool = False) -> datetime | None:
 
 def _integer(value: object) -> int | None:
     return value if type(value) is int and value >= 0 else None
+
+
+def _viewer_dates(record):
+    dates, day_only = [], {}
+    for key in ('followed_at','unfollowed_at','last_sub_ts','last_seen_ts'):
+        raw=record.get(key)
+        if raw is None or raw == '':
+            dates.append(None); continue
+        if key in ('followed_at','unfollowed_at') and type(raw) is str and len(raw)==10:
+            try:
+                if date.fromisoformat(raw).isoformat()!=raw: raise ValueError
+            except ValueError:
+                return None, None
+            day_only[key]=raw
+            dates.append(None); continue
+        parsed=_aware(raw,epoch=key in ('last_sub_ts','last_seen_ts'))
+        if parsed is None: return None, None
+        dates.append(parsed)
+    return dates, day_only
 
 
 def _finite(value: object) -> float | None:
@@ -194,7 +214,13 @@ class CandidateImporter:
 
     def _parse(self, report: InspectionReport, batch_id: str) -> tuple[list[tuple], list[tuple], list[tuple], list[tuple], tuple[tuple[str,int,int,int,int],...], Counter[str], Counter[str]]:
         docs, deferred = self._documents(report)
+        for entity, field, count in report.unknown_fields:
+            deferred[f'unknown:{entity}:{field or "unclassified"}'] += count
         config = docs.get("config.json")
+        if isinstance(config,dict):
+            for key in ('rules','presets','prediction_presets','layout'):
+                if isinstance(config.get(key),(list,dict)) and config[key]:
+                    deferred[f'configuration:{key}'] += len(config[key])
         broadcaster = config.get("broadcaster_id") if isinstance(config, dict) else None
         if type(broadcaster) is not str or not broadcaster:
             raise CandidateImportError("invalid_broadcaster", "config")
@@ -221,13 +247,23 @@ class CandidateImporter:
             sid=name[len("history/stream_"):-len(".jsonl")]
             for line, item in rows:
                 counts["samples"][0] += 1
+                if isinstance(item,dict):
+                    for key in ('messages','events','raids','points','census','emotes','subs','badges'):
+                        if isinstance(item.get(key),(list,dict)) and item[key]:
+                            deferred[f'legacy_activity:{key}'] += len(item[key])
                 if sid not in parsed_streams or not isinstance(item, dict): counts["samples"][2] += 1; deferred["samples:invalid_or_orphan"] += 1; continue
                 # Reuse the staged inspector's full bounded structural contract;
                 # rejected raw activity never becomes an apparently valid sample.
                 if not self._inspector._jsonl_shape(item, name, line, [], Counter()):
                     counts["samples"][3] += 1; deferred["samples:invalid_shape"] += 1; continue
                 at=_aware(item.get("timestamp")); metrics=item.get("metrics"); info=item.get("stream_info")
-                if at is None or not isinstance(metrics,dict) or not isinstance(info,dict): counts["samples"][2]+=1; deferred["samples:invalid"]+=1; continue
+                if at is None or not isinstance(metrics,dict) or not isinstance(info,dict):
+                    reason='samples:invalid'
+                    if at is None and type(item.get('timestamp')) is str:
+                        try:
+                            if datetime.fromisoformat(item['timestamp']).tzinfo is None: reason='samples:timezone_missing'
+                        except ValueError: pass
+                    counts["samples"][2]+=1; deferred[reason]+=1; continue
                 vals=(_integer(metrics.get("viewer_count")),_integer(metrics.get("chat_count")),_finite(metrics.get("msg_speed")),_integer(metrics.get("bits")),_integer(metrics.get("gift_subs")),_integer(info.get("follower_total")))
                 # A metric that is present but invalid must not be normalized.
                 if any(key in metrics and value is None for key,value in zip(("viewer_count","chat_count","msg_speed","bits","gift_subs"), vals[:5])) or ("follower_total" in info and vals[5] is None):
@@ -245,13 +281,18 @@ class CandidateImporter:
                 nums=[_integer(record.get(k)) if k in record else None for k in numeric]
                 if any(k in record and value is None for k,value in zip(numeric,nums)) or ("is_sub" in record and type(record["is_sub"]) is not bool):
                     counts["viewers"][3]+=1; deferred["viewers:invalid"]+=1; continue
-                dates=[_aware(record.get(k), epoch=k in {"last_seen_ts","last_sub_ts"}) if k in record else None for k in ("followed_at","unfollowed_at","last_sub_ts","last_seen_ts")]
-                if any(k in record and value is None for k,value in zip(("followed_at","unfollowed_at","last_sub_ts","last_seen_ts"),dates)):
+                dates, day_only = _viewer_dates(record)
+                if dates is None or ('is_follower' in record and type(record['is_follower']) is not bool):
                     counts["viewers"][3]+=1; deferred["viewers:invalid"]+=1; continue
                 text=("login","name","last_sub_plan","last_stream_id","memo")
                 values=[record.get(k) if k in record else None for k in text]
                 if any(v is not None and type(v) is not str for v in values): counts["viewers"][3]+=1; deferred["viewers:invalid"]+=1; continue
-                viewers.append((uid,values[0],values[1],dates[0],dates[1],nums[0],nums[1],nums[2],nums[3],record.get("is_sub"),nums[4],nums[5],nums[6],nums[7],dates[2],values[2],dates[3],values[3],values[4])); counts["viewers"][1]+=1
+                metadata={}
+                if day_only:
+                    metadata['date_only']=day_only
+                    deferred['viewers:date_only_preserved']+=len(day_only)
+                if 'is_follower' in record: metadata['is_follower']=record['is_follower']
+                viewers.append((uid,values[0],values[1],dates[0],dates[1],nums[0],nums[1],nums[2],nums[3],record.get("is_sub"),nums[4],nums[5],nums[6],nums[7],dates[2],values[2],dates[3],values[3],values[4],json.dumps(metadata,sort_keys=True))); counts["viewers"][1]+=1
         for sid, record in parsed_streams.items():
             has=any(k in record and record[k] not in (None, "") for k in ("vod_id","vod_status","file_path"))
             if not has: continue
@@ -314,7 +355,7 @@ class CandidateImporter:
                         c.execute("INSERT INTO streams(id,channel_id,title,game_name,thumbnail_url,tags_json,started_at,duration_seconds,source,completeness,max_viewers,average_viewers,follower_count,total_comments,legacy_metadata_json,import_batch_id,created_at,updated_at,revision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",(sid,channel,title,game,thumb,json.dumps(list(tags),separators=(",",":")),to_rfc3339(started),duration,"imported",complete,maxv,avg,followers,comments,"{}",batch,now,now,1))
                     for sid,at,*vals in samples: c.execute("INSERT INTO stream_samples VALUES (?,?,?,?,?,?,?,?)",(sid,to_rfc3339(at),*vals))
                     for row in viewers:
-                        c.execute("INSERT INTO viewers(user_id,login,display_name,followed_at,unfollowed_at,visit_count,watch_seconds,comment_count,bits_total,is_subscriber,sub_months,gifts_given,gifts_received,streak,last_sub_at,last_sub_plan,last_seen_at,last_stream_id,note,legacy_metadata_json,created_at,updated_at,revision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",tuple(to_rfc3339(x) if isinstance(x,datetime) else x for x in row)+( "{}",now,now,1))
+                        c.execute(f"INSERT INTO viewers({_VIEWER_COLUMNS},created_at,updated_at,revision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",tuple(to_rfc3339(x) if isinstance(x,datetime) else x for x in row)+(now,now,1))
                     for row in vods: c.execute("INSERT INTO vod_assets VALUES (?,?,?,?,?,?,?,?,?,?)",(*row[:4],row[4],None,None,row[5],row[6],1))
                     aggregate=self._aggregate(c)
                     # This is deliberately the final operation before commit:
@@ -343,6 +384,10 @@ class CandidateImporter:
                 expected={"files":[{"name":n,"size":s,"checksum":h} for n,s,h in self._manifest(inspected)]}
                 if row is None or row[0] != _VERSION or row[1] != inspected.cutoff or row[3] != inspected.source_reference or row[4] != "completed" or row[5] is not None or json.loads(row[2]) != expected: raise CandidateImportError("candidate_verification_failed","candidate")
                 aggregate=self._aggregate(c)
+                actual_viewers=[tuple(row) for row in c.execute(f'SELECT {_VIEWER_COLUMNS} FROM viewers ORDER BY user_id')]
+                expected_viewers=sorted(tuple(to_rfc3339(x) if isinstance(x,datetime) else x for x in row) for row in viewers)
+                if actual_viewers != expected_viewers:
+                    raise CandidateImportError('candidate_verification_failed','candidate')
         except CandidateImportError: raise
         except (PersistenceError,sqlite3.Error,ValueError,TypeError) as exc: raise CandidateImportError("candidate_verification_failed","candidate") from exc
         if aggregate != self._expected_aggregate(streams, samples, viewers, vods):

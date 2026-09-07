@@ -26,6 +26,45 @@ def _fixture(tmp_path):
     return source, downloads, database, inspector.inspect()
 
 
+def test_legacy_follow_dates_preserve_day_precision_and_optional_empty_values(tmp_path):
+    source,downloads,database,_=_fixture(tmp_path)
+    _write(source/'viewers.json',{'viewer':{'name':'person','followed_at':'2026-09-01','unfollowed_at':'','last_seen_ts':1788220800,'is_follower':True}})
+    report=LegacySourceInspector(source,downloads,'fixture').inspect()
+    assert not any(i[2]=='viewer' for i in report.issues)
+    importer=CandidateImporter(source,downloads,'fixture',database)
+    result=importer.import_report(report)
+    assert dict(result.deferred_counts)['viewers:date_only_preserved']==1
+    with database.connection() as c:
+        row=c.execute('SELECT followed_at,unfollowed_at,legacy_metadata_json,last_seen_at FROM viewers').fetchone()
+        assert row[0] is None and row[1] is None
+        assert json.loads(row[2])=={'date_only':{'followed_at':'2026-09-01'},'is_follower':True}
+        assert row[3]=='2026-09-01T00:00:00.000000Z'
+        c.execute("UPDATE viewers SET legacy_metadata_json='{}'");c.commit()
+    with pytest.raises(CandidateImportError,match='candidate_verification_failed'):importer.verify_import(report)
+
+
+@pytest.mark.parametrize('value',['2026-02-30','2026-09-01T12:00:00','invalid'])
+def test_invalid_or_ambiguous_viewer_dates_stay_deferred(tmp_path,value):
+    source,downloads,database,_=_fixture(tmp_path)
+    _write(source/'viewers.json',{'viewer':{'followed_at':value}})
+    report=LegacySourceInspector(source,downloads,'fixture').inspect()
+    result=CandidateImporter(source,downloads,'fixture',database).import_report(report)
+    assert dict(result.deferred_counts)['viewers:invalid']==1
+    assert dict(result.aggregates)['viewers']==0
+
+
+def test_unknown_fields_and_naive_sample_times_remain_visible_in_report(tmp_path):
+    source,downloads,database,_=_fixture(tmp_path)
+    _write(source/'config.json',{'broadcaster_id':'channel','unmapped_option':True,'presets':[{'name':'keep'}]})
+    _write(source/'history/stream_stream.jsonl','{"timestamp":"2026-09-01T12:00:00","stream_info":{},"metrics":{},"messages":[{"time":"12:00","user":"fixture","text":"saved","is_sub":false,"badges":""}]}\n')
+    report=LegacySourceInspector(source,downloads,'fixture').inspect()
+    result=CandidateImporter(source,downloads,'fixture',database).import_report(report)
+    assert dict(result.deferred_counts)['samples:timezone_missing']==1
+    assert dict(result.deferred_counts)['unknown:config:unmapped_option']==1
+    assert dict(result.deferred_counts)['configuration:presets']==1
+    assert dict(result.deferred_counts)['legacy_activity:messages']==1
+
+
 def test_candidate_import_is_atomic_safe_and_verified_noop(tmp_path):
     source, downloads, database, report = _fixture(tmp_path)
     importer=CandidateImporter(source, downloads, "fixture", database, clock=lambda: datetime(2026,1,2,tzinfo=timezone.utc))

@@ -1,5 +1,11 @@
 # 02. 情報設計と UI 設計
 
+2026-09-06更新: 画面の基本構成は[07のAccepted](07-recording-and-workflows.md)と
+[09のAccepted](09-automation-commands-and-predictions.md)を反映する。
+設定・復元は[08](08-nas-backup-and-settings.md)、数値・欠測表示は[10](10-viewer-metrics-and-data-quality.md)を参照する。
+以下の旧ワイヤーフレームは要素の参考であり、配置や名称に違いがある場合は今回の合意した画面案を優先する。
+記載する経路は将来案。現行のv2パイロットは `/v2/live` と読み取りAPIであり、全経路が実装済みではない。
+
 ## 1. Design direction: Calm Control Room
 
 配信中に常時開く道具として、ゲーム風の装飾よりも「落ち着いた運用コンソール」を
@@ -26,16 +32,17 @@ UI にする。
 ## 2. 第一階層の情報設計
 
 ```text
-Live                現在の配信、準備、イベント、予想、緊急操作
-Automation          配信プリセット、自動チャットルール
-Community           現在/累積視聴者、フォロワー、メモ、shoutout
-Insights            配信履歴、推移、比較、配信詳細
-Archive             Twitch VOD、download job、保存ファイル
-Settings            Twitch接続、Bot、動作、データ、system
+ライブ              現在の配信、視聴者、同接、イベント、セット適用、マーカー
+配信履歴            平均・最大同接、推移、比較、イベント、VODへの参照
+コミュニティ        視聴者、フォロワー履歴、人物メモ、参加履歴
+配信セット          タイトル・カテゴリー・タグの準備と適用
+自動化              自動投稿、チャットコマンド、予想プリセット
+設定                Twitch接続、記録・機能、保存・削除、バックアップ、復元
 ```
 
-Desktop は左 sidebar、tablet は icon + label の compact sidebar、mobile は top bar と
-navigation drawer を使う。主要領域を 6 個すべて bottom navigation に押し込まない。
+Desktop は左sidebar。狭い画面は名称を残した上部の折り返しナビゲーションへ切り替える。
+視聴者一覧・グラフ等は幅に応じて縦に並べ、単に縮小して文字を読めなくしない。
+独立したアーカイブ管理は維持し、配信履歴と設定の補助導線から開けるようにする。
 
 ### Global app shell
 
@@ -66,17 +73,22 @@ viewer count、game、VOD progress のような局所情報は各ページに置
 | Route | 目的 | Primary action |
 |---|---|---|
 | `/live` | 現在の配信を準備・監視・操作 | 状況依存: preset 適用 / Bot 開始 / prediction |
-| `/automation/presets` | 配信設定セットを管理 | 新しい preset |
+| `/presets` | 配信セットを独立画面で管理 | 作成・編集・差分確認 |
 | `/automation/rules` | 自動チャットを管理 | 新しい rule |
+| `/automation/commands` | チャットコマンドを管理 | 作成・応答プレビュー |
+| `/automation/predictions` | 予想プリセットと未確定の予想を管理 | 内容確認・開始・確定 |
 | `/community/session` | 現セッション視聴者を扱う | viewer 検索 |
 | `/community/viewers` | 累積 viewer record を扱う | filter / export |
 | `/community/followers` | follower sync と履歴 | 同期 |
 | `/insights` | 配信を検索・比較する | 比較対象を選択 |
 | `/insights/streams/<id>` | 一配信を分析する | VOD を開く |
+| `/insights/compare` | 2配信の同接とイベントを比較 | 対象・時間範囲の切替 |
 | `/archive` | VOD と job を管理する | 履歴同期 |
 | `/settings/connections` | Twitch credentials/scopes | 接続確認 |
 | `/settings/bot` | Bot と chat 動作 | 設定保存 |
 | `/settings/data` | retention/export/import 状態 | export |
+| `/settings/backups` | NAS保存状態・スケジュール・容量 | 保存設定・手動実行 |
+| `/settings/restore` | 検証済みコピーから復元 | 候補検証・対象確認 |
 | `/settings/system` | version、health、診断 | 診断を取得 |
 
 `/` は `/live` へ redirect する。URL は reload、bookmark、back/forward で意味を保つ。
@@ -88,9 +100,9 @@ viewer count、game、VOD progress のような局所情報は各ページに置
 |---|---|---|
 | top bar live/game/viewers | Global + `/live` | global と局所 status を分離 |
 | viewers card | `/live` compact roster + `/community` full view | 配信中確認と管理を分離 |
-| presets tab/modal | `/automation/presets`、`/live` quick apply | 作成と利用を分離 |
+| presets tab/modal | `/presets`、`/live` quick apply | 独立した配信セット画面とライブ中の利用 |
 | rules tab/monitor | `/automation/rules`、`/live` health summary | edit と運用監視を分離 |
-| prediction tab/modal | `/live` の一意な panel | live 文脈に限定し重複描画を除去 |
+| prediction tab/modal | `/live` と `/automation/predictions` の共通コンポーネント | 同じ予想ID・状態を参照し、配信外でも未確定分を管理 |
 | events/logs card | `/live/activity` timeline | event と system log を区別 |
 | settings modal | `/settings/*` | 深い form を安定 URL へ移動 |
 | analytics list/calendar/trends | `/insights` view switch | 同一 query model で表示切替 |
@@ -101,6 +113,8 @@ viewer count、game、VOD progress のような局所情報は各ページに置
 ## 5. `/live` 画面
 
 同じ route で状態に応じて優先 content を変える。
+上部は配信状態・セット適用・マーカー操作、主領域は視聴者一覧と同接推移・イベントを並べる。
+平均・最大には記録範囲と更新時刻を付け、更新で人物の選択や操作位置を移動しない。
 
 ### 5.1 未設定
 
@@ -182,6 +196,12 @@ Twitch に再接続しています
 - edit draft は server validation error で失われない。
 - live status は「次回送信」ではなく「次回評価」と「待機理由」を区別する。
 
+### Commands and predictions
+
+自動化画面は[09](09-automation-commands-and-predictions.md)の3タブと、編集・送信しないテストを使う。
+保存だけでは外部操作を行わず、初期は3機能ともオフ。予想の受付終了・確定・取消を別操作にする。
+機能オフや配信終了で未確定の予想を隠さない。全体停止時は最後の状態と確認時刻を示す。
+
 ## 7. Community
 
 ### Session view
@@ -203,6 +223,8 @@ Actions: Shoutout
 
 表示名は可変、Twitch user ID を identity とする。存在しない/ban 済み viewer の履歴も
 消さず、status を添える。
+ワイヤーフレームの `watched` は実視聴時間を意味しない。UIではチャット接続による観測時間として表示する。
+未確認と未フォロー、参加記録なしと0回を区別し、人物を切り替えてもメモの下書きを保持する。
 
 ## 8. Insights
 
@@ -223,6 +245,10 @@ Actions: Shoutout
 4. audience/emote summary。
 5. chat log（保持設定で存在する場合）。
 6. VOD link/status。
+
+同接グラフにイベント・マーカーを同じ時間軸で重ね、選択で関連記録を開く。
+平均・最大・カバー率は[10の計算契約](10-viewer-metrics-and-data-quality.md)で表示する。
+比較は同じカテゴリーの前回を候補に、任意の配信へ切替可能。全体値と同じ経過時間範囲の値を区別する。
 
 Bot 非稼働配信では「データなし」ではなく、Twitch API 由来 metadata と Bot 観測値の
 どちらが存在するかを示す。Chart は summary と accessible data table を併設する。
@@ -245,6 +271,9 @@ Bot 非稼働配信では「データなし」ではなく、Twitch API 由来 m
 - Progress polling は visible/running job のみを対象にし、完了後も result を保持する。
 
 ## 10. Settings
+
+主な5項目はTwitch接続、記録・機能、保存・削除、バックアップ、復元。
+[08](08-nas-backup-and-settings.md)の休止・容量・復元の状態を表示し、診断情報とアーカイブ管理は補助導線に置く。
 
 ### Connections
 
@@ -299,13 +328,14 @@ Bot 非稼働配信では「データなし」ではなく、Twitch API 由来 m
 Confirmation が必要:
 
 - prediction resolve/cancel。
+- 記録・自動処理を止めるBot全体停止。公開状態の消去と停止期間の欠測を説明する。
 - VOD file delete、bulk download。
 - history/data delete。
 - credentials 置換。
 
 通常は不要:
 
-- filter/sort、memo save、rule enable、Bot start/stop、preset draft save。
+- filter/sort、memo save、rule enable、Bot start、preset draft save。
 
 Twitch への不可逆または公に見える action は、action label と対象を明示する。
 

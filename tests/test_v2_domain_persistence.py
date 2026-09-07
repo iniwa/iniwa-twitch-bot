@@ -89,7 +89,9 @@ def test_vod_component_sql_allows_filename_with_two_dots(tmp_path):
 
 
 def test_migration_0002_schema_contract(tmp_path):
-    db = _db(tmp_path)
+    from twitchbot.adapters.persistence.migrations import MIGRATIONS
+    db = SQLiteDatabase(tmp_path / "domain.sqlite3", migrations=MIGRATIONS[:2])
+    db.migrate()
     expected = {
         "streams": {"id", "channel_id", "title", "game_id", "game_name", "thumbnail_url", "tags_json", "started_at", "ended_at", "duration_seconds", "source", "completeness", "max_viewers", "average_viewers", "follower_count", "total_comments", "legacy_metadata_json", "import_batch_id", "created_at", "updated_at", "revision"},
         "stream_samples": {"stream_id", "sampled_at", "viewer_count", "chat_count", "messages_per_minute", "bits", "gift_subscriptions", "follower_total"},

@@ -8,6 +8,15 @@ API_TIMEOUT = 10
 MAX_PAGINATION_PAGES = 100
 
 
+def get_videos(conf, first=100):
+    """An explicit v2 caller uses the shared paced client and current grant."""
+    if '_videos_reader' in conf:
+        return conf['_videos_reader'](first)
+    url = f"https://api.twitch.tv/helix/videos?user_id={conf['broadcaster_id']}&type=archive&first={first}"
+    response = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
+    return response.json().get('data', []) if response.status_code == 200 else None
+
+
 def get_headers(conf):
     token = conf['access_token'].replace("oauth:", "")
     return {
@@ -302,10 +311,8 @@ def force_update_followers(conf):
 def sync_vod_history(conf, force_update=False):
     c.log("[SYNC] Syncing VOD history..." + (" (force update)" if force_update else ""))
     try:
-        url = f"https://api.twitch.tv/helix/videos?user_id={conf['broadcaster_id']}&type=archive&first=100"
-        r = requests.get(url, headers=get_headers(conf), timeout=API_TIMEOUT)
-        if r.status_code == 200:
-            videos = r.json().get('data', [])
+        videos = get_videos(conf)
+        if videos is not None:
             updated_count = 0
 
             with c.file_lock:

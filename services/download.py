@@ -7,7 +7,7 @@ from services.storage import (
     ARCHIVE_WAIT_DIR, cleanup_temp_files,
     sanitize_filename, get_file_date
 )
-from services.twitch_api import get_headers
+from services.twitch_api import get_headers, get_videos
 
 AUTO_DOWNLOAD_DELAY = 300
 
@@ -69,12 +69,16 @@ def _find_video_url(conf, stream_id, idx_data):
         video_id = idx_data[stream_id]['vod_id']
         return f'https://www.twitch.tv/videos/{video_id}', video_id
 
-    url = f"https://api.twitch.tv/helix/videos?user_id={conf['broadcaster_id']}&type=archive&first=20"
-    r = requests.get(url, headers=get_headers(conf), timeout=10)
-    if r.status_code != 200:
+    if '_videos_reader' in conf:
+        videos = get_videos(conf, 20)
+    else:
+        url = f"https://api.twitch.tv/helix/videos?user_id={conf['broadcaster_id']}&type=archive&first=20"
+        r = requests.get(url, headers=get_headers(conf), timeout=10)
+        if r.status_code != 200:
+            return None, None
+        videos = r.json().get('data', [])
+    if videos is None:
         return None, None
-
-    videos = r.json().get('data', [])
     st_str = idx_data.get(stream_id, {}).get('start_time')
 
     for v in videos:

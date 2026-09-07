@@ -23,6 +23,8 @@ def test_default_config_has_no_obs_archive():
 
 def test_vod_routes_redirect_without_admin(client, monkeypatch):
     """manual / bulk / cancel / delete が管理者モードなしでも実行できる。"""
+    # Route behavior must not read local credentials or create runtime data.
+    monkeypatch.setattr(c, 'load_config', lambda: {})
     monkeypatch.setattr(vodmod, 'execute_download', lambda conf, sid: None)
     monkeypatch.setattr(vodmod, 'bulk_download_task', lambda conf: None)
     monkeypatch.setattr(vodmod, 'request_cancel_download', lambda sid: None)

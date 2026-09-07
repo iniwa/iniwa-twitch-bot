@@ -32,7 +32,7 @@ _VIEWER = frozenset({
     "name", "login", "total_visits", "streak", "total_duration", "last_stream_id",
     "last_seen_ts", "total_comments", "total_bits", "is_sub", "total_sub_months",
     "last_sub_ts", "last_sub_plan", "total_gifts_given", "total_gifts_received",
-    "followed_at", "unfollowed_at", "memo",
+    "followed_at", "unfollowed_at", "memo", "is_follower",
 })
 _INDEX = frozenset({
     "start_time", "title", "game_name", "max_viewers", "avg_viewers_sum", "log_count",
@@ -445,7 +445,9 @@ class LegacySourceInspector:
                 if key in numeric and not _number(value):
                     self._issue(issues, file, None, entity, "invalid_field", key)
                     invalid = True
-                elif key == "is_sub" and type(value) is not bool:
+                elif key in ('last_seen_ts','last_sub_ts') and (_number(value) or value is None):
+                    pass  # Legacy workers store Unix seconds; importer validates range.
+                elif key in ("is_sub", "is_follower") and type(value) is not bool:
                     self._issue(issues, file, None, entity, "invalid_field", key)
                     invalid = True
                 elif key in strings and value is not None and type(value) is not str:

@@ -235,7 +235,8 @@ v2 の価値は機能数ではなく、次の 3 点で測る。
 1. v2 でも単一チャンネル・単一オペレーター専用でよいか。
 2. Bot と broadcaster は現在同一アカウントか別アカウントか。v2 は両方を扱うが、scope と
    EventSub session の構成確認に必要となる。
-3. 過去 chat message 本文を無期限保持するか、既定の保持期間を設けるか。
+3. 解決済み（2026-09-06）: チャット本文は無期限保存・手動削除。
+   [今回の保存方針](07-recording-and-workflows.md)を参照する。
 4. UI theme は system/light/dark の 3 状態にするか、dark 固定運用を残すか。
 5. legacy IRC を初回切替まで残すか、EventSub chat への完全移行を先に行うか。
 6. Cloudflare Access が付与する identity を画面に表示する必要があるか。

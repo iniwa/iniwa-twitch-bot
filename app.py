@@ -1,9 +1,7 @@
 import os
 import atexit
 import logging
-from flask import Flask
-from routes import register_blueprints
-from routes.filters import register_filters
+from routes.application import create_app
 from services.workers import start_workers, shutdown_workers
 
 logging.basicConfig(
@@ -13,9 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-register_filters(app)
-register_blueprints(app)
+app = create_app()
 
 try:
     start_workers()

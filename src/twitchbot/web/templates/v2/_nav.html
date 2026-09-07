@@ -1,0 +1,20 @@
+{% set items = [
+  ('live', 'v2_control.control_page', 'ライブ', 'M4 12h16M12 4v16M20 12H4'),
+  ('history', 'v2_history.history_page', '配信履歴', 'M4 6h16M4 12h16M4 18h10'),
+  ('community', 'v2_community.community_page', 'コミュニティ', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87'),
+  ('presets', 'v2_control.presets_page', '配信セット', 'M4 7h16v13H4zM8 3v4m8-4v4M8 11h8M8 15h5'),
+  ('automation', 'v2_automation.automation_page', '自動化', 'M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83'),
+  ('settings', 'v2_operations.settings_page', '設定', 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6')
+] %}
+<nav class="app-nav" aria-label="メイン">
+  <strong class="app-brand">INIWA</strong>
+  <div class="app-nav-items">
+    {% for key, endpoint, label, path in items %}
+    <a class="app-nav-link" {% if active_nav == key %}aria-current="page"{% endif %} href="{{ url_for(endpoint) }}">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="{{ path }}"/></svg>
+      <span>{{ label }}</span>
+      {% if key == 'live' and nav_live is defined and nav_live %}<small>配信中</small>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</nav>

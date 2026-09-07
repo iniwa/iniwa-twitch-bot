@@ -6,9 +6,25 @@
 一から再構築するための設計パッケージである。2026-08-13 時点のコード、テスト、
 既存ドキュメント、Twitch 公式仕様を基準にしている。
 
-ここで定義するのは実装前の推奨案であり、現行アプリ、実データ、認証情報、
-Docker/Portainer 環境を変更するものではない。`Recommended` と `Open` の項目は、
+00〜11は設計・推奨案、12以降は実装と検証の到達点を記録する。
+実装済みの基盤と将来要件を区別する。本番切替は[19](19-production-cutover.md)に記録する。`Recommended` と `Open` の項目は、
 実装着手前に承認または変更する。
+
+2026-09-06の設計対話で合意した機能優先順位、主要4画面、保存方針と、
+具体化中の運用案は[07-recording-and-workflows.md](07-recording-and-workflows.md)に記録する。
+同資料の`Accepted`と、未決定の詳細案を区別して参照する。
+NASバックアップと設定・復元の詳細は[08-nas-backup-and-settings.md](08-nas-backup-and-settings.md)を参照する。
+将来用の自動投稿・チャットコマンド・予想の詳細案は[09-automation-commands-and-predictions.md](09-automation-commands-and-predictions.md)を参照する。
+同接・欠測の計算契約は[10](10-viewer-metrics-and-data-quality.md)、ソースの到達点・データ/APIの追加・
+実装順序は[11](11-implementation-contract-and-delivery.md)にまとめる。
+同接・欠測と履歴読み取りの初期実装、接続境界、検証範囲は[12](12-analytics-implementation.md)を参照する。
+コミュニティ・配信中の操作・バックアップ基盤の初期実装は[13](13-community-controls-and-backups.md)を参照する。
+arm64・実NAS・ブラウザでの初回検証結果と修正は[14](14-device-verification.md)を参照する。
+記録ワーカー・NAS自動保存・自動化・予想の接続と再検証は[15](15-runtime-and-connections.md)、
+新版の明示的な起動と切替前提は[16](16-cutover-readiness.md)を参照する。
+Twitchログイン画面・自動認証更新・初回設定は[17](17-twitch-authorization.md)を参照する。
+旧画面との統合と実データの移行照合は[18](18-integrated-host-and-migration-rehearsal.md)を参照する。
+新Botへの本番切替、検証結果、保留項目、復旧方針は[19](19-production-cutover.md)を参照する。
 
 ## 結論
 
@@ -33,6 +49,16 @@ v2 は、既存機能を単純に移植した SPA ではなく、次の方針で
 | [04-data-and-api.md](04-data-and-api.md) | データモデル、保存境界、API 契約、互換性 |
 | [05-migration-and-delivery.md](05-migration-and-delivery.md) | 段階移行、リリース単位、ロールバック、Definition of Done |
 | [06-quality-security-operations.md](06-quality-security-operations.md) | テスト、性能、セキュリティ、可観測性、運用 |
+| [07-recording-and-workflows.md](07-recording-and-workflows.md) | 今回の合意事項、日常操作、記録・保存・復旧の具体案 |
+| [08-nas-backup-and-settings.md](08-nas-backup-and-settings.md) | NASバックアップ、世代管理、設定・復元の具体案 |
+| [09-automation-commands-and-predictions.md](09-automation-commands-and-predictions.md) | 初期無効の自動投稿・コマンド・予想、実行条件と操作の具体案 |
+| [10-viewer-metrics-and-data-quality.md](10-viewer-metrics-and-data-quality.md) | 同接の取得、時間加重平均、最大、欠測、記録品質と比較 |
+| [11-implementation-contract-and-delivery.md](11-implementation-contract-and-delivery.md) | 既存基盤と不足、追加モデル/API、実装単位と完了条件 |
+| [12-analytics-implementation.md](12-analytics-implementation.md) | 同接と履歴の初期実装・読み取りAPI・隔離検証・未接続の範囲 |
+| [13-community-controls-and-backups.md](13-community-controls-and-backups.md) | イベント・フォロー・チャット、メモ・セット、バックアップ・復元候補の初期実装 |
+| [14-device-verification.md](14-device-verification.md) | arm64・NAS・実ブラウザの検証結果、時計差修正、実環境統合の残り |
+| [15-runtime-and-connections.md](15-runtime-and-connections.md) | 記録・NAS自動保存・自動化・予想の接続と実機再検証 |
+| [16-cutover-readiness.md](16-cutover-readiness.md) | 明示的な新版起動、移行候補、切替・復旧の前提 |
 
 ## 意思決定の状態
 
@@ -79,7 +105,8 @@ Raspberry Pi、単一コンテナという現実の運用に対して、追加�
 `/live` の優先順位と responsive behavior を具体化した会話内 preview は、この設計パッケージとは
 別の一時 artifact として作成している。repository へ UI implementation や generated image を追加した
 わけではない。実装開始時は [02-information-architecture-and-ui.md](02-information-architecture-and-ui.md)
-を正とし、offline/live/degraded の browser prototype を project 内で改めて作る。
+を、[今回合意した画面の基本構成](07-recording-and-workflows.md)と整合させ、
+offline/live/degraded の browser prototype を project 内で改めて作る。
 
 ## 設計の読み方
 
@@ -96,15 +123,16 @@ flowchart LR
     ARCH --> QO
 ```
 
-## 実装へ進む前の承認ゲート
+## 実装と外部接続に向けた確認事項
 
-次の 4 点を承認した時点で、最初の実装 handoff を作る。
+1. UIの基本構成は07・09のAcceptedを採用する。アーカイブ機能は補助導線から維持する。
+2. SQLite基盤と候補インポーターを再利用し、現行JSON/JSONLは変更せず移行元として残す。
+3. 新規チャット受信はEventSub中心の推奨を維持し、IRC併存中の収集担当を一意にする。
+4. 読み取りと隔離した操作検証から段階的に切り替え、既存の公開ステータスを維持する。
+5. Botと配信者の実アカウント・認可、NAS転送、実データ切替の条件は接続・移行前に確認する。
 
-1. UI の第一階層を「ライブ・自動化・コミュニティ・分析・アーカイブ・設定」とする。
-2. 運用データの保存先として SQLite を採用し、現行 JSON/JSONL は import 元として残す。
-3. 新規チャット受信を EventSub 中心とし、IRC を移行期間だけ併存可能にする。
-4. 初回リリースを機能一括置換ではなく、read-only 画面から段階的に切り替える。
-5. Bot と broadcaster を別 credential actor として扱い、同一アカウント時だけ安全に共有する。
+未確認の実環境情報を使わず進められる作業と実環境での検証は[11](11-implementation-contract-and-delivery.md)で分ける。
+詳細の推奨値ごとに追加質問を重ねず、設計・隔離検証を進める。実移行・デプロイ・公開の範囲は別途具体化する。
 
 ## 現行監査の主な根拠
 

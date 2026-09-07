@@ -316,7 +316,8 @@ Viewer records、memo、chat、follow/sub/Bits は個人に関係する data と
 - operational log に memo/chat 本文を複製しない。
 - export は対象、期間、含まれる private data を確認する。
 - delete/retention job は dry-run report と backup policy を持つ。
-- chat retention が未決定の間は source migration で silent deletion しない。
+- チャット本文は[2026-09-06の決定](07-recording-and-workflows.md)に従い無期限保存・手動削除。
+  source migration で silent deletion しない。
 - screenshot/fixture/docs に実 user data を使わない。
 
 ## 10. Observability
@@ -362,10 +363,13 @@ external notification integration はこの project の初期範囲に含めな�
 
 ### Database
 
+- NAS保存、配信終了後＋1日1回の頻度は2026-09-06に決定。
+  [08の設計](08-nas-backup-and-settings.md)で、作成・転送・検証・復元の具体案を扱う。
 - pre-migration/pre-upgrade backup は必須。
-- runtime backup を入れる場合は SQLite backup API と bounded rotation を使う。
+- runtime backup は SQLite backup API と bounded rotation を使う。
 - `PRAGMA quick_check` を定期/upgrade 前に実行する。
-- backup success は source DB と destination の integrity/schema/count を確認する。
+- backup success は一貫したsnapshotとdestinationのintegrity/schema/countを確認する。
+  稼働中に変化するsource DBの現在件数との単純一致は要求しない。
 
 ### Credentials
 

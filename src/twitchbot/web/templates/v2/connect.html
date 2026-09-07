@@ -1,0 +1,10 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Twitch接続 · Iniwa</title><link rel="stylesheet" href="{{ url_for('v2_live.static',filename='v2/app.css') }}"><link rel="stylesheet" href="{{ url_for('v2_live.static',filename='v2/control.css') }}"><script defer src="{{ url_for('v2_live.static',filename='v2/login.js') }}"></script></head><body>
+{% set active_nav = 'settings' %}{% include 'v2/_nav.html' %}
+<main><p class="eyebrow">TWITCH</p><h1>Twitchに接続</h1><p>Twitchの公式画面でログインして、このアプリへの接続を許可します。パスワードやトークンをこの画面に入力する必要はありません。</p><p id="login-status" role="status" aria-live="polite">接続の準備を確認しています。</p>
+{% for role, title, description in [('broadcaster','配信者アカウント','配信履歴、フォローなどの出来事を記録し、配信セットやマーカーを使います。'),('bot','Botアカウント','将来、自動投稿やチャットコマンドを有効にするときに接続します。')] %}
+<section data-login-role="{{ role }}"><h2>{{ title }}</h2><p>{{ description }}</p><p class="login-state" role="status" aria-live="polite">未確認</p>
+{% if role == 'broadcaster' %}<label><input class="login-predictions" type="checkbox">予想を操作する権限も追加する</label>{% endif %}
+<p><button class="login-start" disabled>Twitchログインを開始</button> <button class="login-cancel" hidden>取り消す</button></p>
+<div class="login-instructions" hidden><p>確認コード: <strong class="login-code"></strong></p><p>Twitch画面で、接続するアカウントとこのコードを確認してください。</p><a class="login-link" target="_blank" rel="noopener noreferrer">Twitchを開いてログイン</a><p class="muted">認可後はこの画面に戻ってください。接続結果を自動で確認します。</p></div></section>
+{% endfor %}
+<p class="muted">ログインしても、停止中の記録や自動投稿は開始しません。設定画面から記録を開始してください。</p></main></body></html>

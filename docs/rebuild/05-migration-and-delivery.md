@@ -1,5 +1,10 @@
 # 05. 移行とデリバリー計画
 
+2026-09-06更新: ソースにはSQLite・候補インポーター・読み取り専用ライブ等の基盤がある。
+以下のphaseは元の全体計画として残し、再実装せず追加する作業単位と現在の不足は
+[11の実装順序](11-implementation-contract-and-delivery.md)を参照する。
+今回の設計では実データ移行・配備・公開を実行しない。
+
 ## 1. Delivery strategy
 
 **Status: Recommended**
@@ -51,7 +56,7 @@ flowchart LR
 - SQLite target。
 - EventSub-first chat transport。
 - information architecture と theme 方針。
-- chat retention。
+- chat retention（[2026-09-06の決定](07-recording-and-workflows.md): 無期限保存・手動削除）。
 - current Bot/Broadcaster identity が同一か別かを確認し、actor credential mapping を確定する。
 
 ### Deliverables

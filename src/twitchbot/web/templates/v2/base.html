@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Iniwa{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('v2_live.static', filename='v2/app.css') }}">
+  <script defer src="{{ url_for('v2_live.static', filename='v2/app.js') }}"></script>
+  {% block styles %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</head>
+<body>
+  {% include 'v2/_nav.html' %}
+  <main data-page="{{ page_id|default(active_nav) }}">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

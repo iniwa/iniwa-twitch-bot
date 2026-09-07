@@ -46,7 +46,7 @@ def test_migration_connection_and_integrity_contract(tmp_path):
         assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         assert connection.execute("PRAGMA busy_timeout").fetchone()[0] == 5000
         names = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    assert names == {"schema_migrations", "settings", "channel_read_model", "operation_log", "processed_event_ids", "import_batches", "streams", "stream_samples", "viewers", "vod_assets"}
+        assert names == {"schema_migrations", "settings", "channel_read_model", "operation_log", "processed_event_ids", "import_batches", "streams", "stream_samples", "viewers", "vod_assets", "stream_metric_state", "collection_runs", "viewer_observations", "observation_gaps", "community_state", "community_people", "channel_events", "follow_history", "follower_state", "follower_sync_runs", "follower_sync_pages", "follower_sync_members", "chat_messages", "viewer_streams", "chat_body_deletions", "channel_presets", "stream_notes", "preset_previews", "control_operations", "person_notes", "backup_policy", "backup_jobs", "stream_presence", "eventsub_gaps", "automation_policy", "automation_definitions", "automation_definition_times", "command_aliases", "chat_dispatches", "command_cooldowns", "post_waits", "automation_messages", "prediction_policy", "prediction_presets", "prediction_preset_times", "prediction_cache", "prediction_operations", "restore_jobs"}
     database.quick_check()
 
 
@@ -228,7 +228,7 @@ def test_migration_history_rejects_future_version(tmp_path):
     database = SQLiteDatabase(tmp_path / "core.sqlite3")
     database.migrate()
     with database.connection() as connection:
-        connection.execute("UPDATE schema_migrations SET version=? WHERE version=2", (3,))
+        connection.execute("UPDATE schema_migrations SET version=? WHERE version=?", (len(MIGRATIONS) + 1, len(MIGRATIONS)))
         connection.commit()
     with pytest.raises(PersistenceError) as caught:
         database.migrate()

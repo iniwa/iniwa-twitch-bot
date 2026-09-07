@@ -1,5 +1,9 @@
 # 04. データと API 設計
 
+2026-09-06補足: 本文は将来設計を含む。現在のmigrationで存在する範囲と追加する論理モデル・APIは
+[11](11-implementation-contract-and-delivery.md)、同接の計算と指標別の記録品質は
+[10](10-viewer-metrics-and-data-quality.md)を参照する。計画中のテーブルを実装済みと扱わない。
+
 ## 1. Data decision
 
 **Status: Recommended**
@@ -167,6 +171,11 @@ artifact が担う。
 `stream_id`, `sampled_at` を composite key とし、`viewer_count`, `chat_count`,
 `messages_per_minute`, `bits`, `gift_subscriptions`, `follower_total` を持つ。
 
+既存・移行のサンプル形式として保持する。新しい20秒ごとの同接は `viewer_observations`、
+収集境界・欠測は専用モデルへ追加し、1分行を架空の20秒観測へ分割しない。
+新しい平均・最大は方式と範囲を付けた集計結果に保存し、旧平均を黙って書き換えない。
+配信全体の `completeness` だけでは足りないため、同接・チャット・イベント等の品質を分ける。
+
 #### `stream_counters`
 
 `stream_id`, `kind=emote|badge|subscription_plan`, `counter_key`, `count`。
@@ -183,8 +192,9 @@ normal form へ格納する。表示に不要な raw payload と token は保存
 #### `chat_messages`
 
 `id`, `twitch_message_id`, `stream_id`, `user_id`, `display_name`, `occurred_at`, `body`,
-`is_subscriber`, `badges_json`。本文保持期間は [01-product-requirements.md](01-product-requirements.md)
-の open question。決定までは現行 data を自動削除しない。
+`is_subscriber`, `badges_json`。本文は無期限保存・手動削除とする
+（2026-09-06 Accepted。[今回の保存方針](07-recording-and-workflows.md)参照）。
+現行 data を移行時に自動削除しない。
 
 ### 4.3 Audience
 
@@ -541,6 +551,7 @@ Viewer list や raw activity は aggregate に含めず、独立 query にする
 | `PATCH /api/v2/rules/<id>` | edit/enable/order | resource |
 | `DELETE /api/v2/rules/<id>` | delete | 204 |
 | `POST /api/v2/predictions` | Twitch prediction start | operation/resource |
+| `POST /api/v2/predictions/<id>/lock` | 受付終了 | operation/resource |
 | `POST /api/v2/predictions/<id>/resolution` | winner resolve | operation/resource |
 | `POST /api/v2/predictions/<id>/cancellation` | cancel | operation/resource |
 | `PATCH /api/v2/viewers/<id>` | memo 等 local field update | resource |

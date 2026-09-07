@@ -1,5 +1,9 @@
 # 03. システムアーキテクチャ
 
+2026-09-06補足: 計画中の構成と現行v2基盤の実装状況は[11](11-implementation-contract-and-delivery.md)で区別する。
+同接の取得・保存・記録境界は[10](10-viewer-metrics-and-data-quality.md)を参照し、
+minute aggregatorだけで新しい同接観測を置き換えない。既存のスナップショット・停止・配備境界を維持する。
+
 ## 1. Architecture decision
 
 **Status: Recommended**

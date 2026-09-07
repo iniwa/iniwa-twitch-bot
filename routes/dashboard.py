@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template, jsonify, request, current_app
 from datetime import datetime, timedelta, timezone
 import config as c
 from services.predictions import get_current_prediction
@@ -238,7 +238,8 @@ def api_stream_status():
     ワーカーが保持しているスナップショットのみを返す。Twitch API 呼び出しや
     外部サービスへの問い合わせは一切行わない。
     """
-    snapshot = c.get_current_stream()
+    provider = current_app.extensions.get('twitchbot.stream_status')
+    snapshot = provider() if provider is not None else c.get_current_stream()
     checked_at = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     if snapshot:
         return jsonify({

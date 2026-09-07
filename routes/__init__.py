@@ -4,7 +4,7 @@ from routes import (
 )
 
 
-def register_blueprints(app):
+def register_blueprints(app, *, v2_container=None):
     app.register_blueprint(dashboard.bp)
     app.register_blueprint(analytics.bp)
     app.register_blueprint(vod.bp)
@@ -13,6 +13,12 @@ def register_blueprints(app):
     app.register_blueprint(predictions.bp)
     app.register_blueprint(settings.bp)
     app.register_blueprint(viewers.bp)
+
+    if v2_container is not None:
+        # Explicit candidate composition; the caller owns its worker lifecycle.
+        from src.twitchbot.web.app import register_blueprints as register_v2
+        register_v2(app, v2_container)
+        return
 
     # The production app remains the sole Flask runtime.  Import through the
     # repository-root-resolvable namespace; Docker does not add /app/src.
