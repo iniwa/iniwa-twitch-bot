@@ -232,7 +232,7 @@ def test_new_control_pages_and_mutations_keep_pilot_readonly(store,monkeypatch):
         assert response.status_code==200
         assert response.headers["Cache-Control"]=="no-store"
         if path == "/v2/control":
-            assert '<main data-page="live">' in response.text and '/v2-static/v2/app.js' in response.text
+            assert '<main data-page="live" data-refresh-managed>' in response.text and '/v2-static/v2/app.js' in response.text
         if path == "/v2/presets":
             assert '<main data-page="presets">' in response.text and '/v2-static/v2/app.js' in response.text
     sorted_response=client.get("/api/v2/presets?sort=updated_at&order=desc")

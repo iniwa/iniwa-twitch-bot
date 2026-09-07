@@ -254,6 +254,9 @@ def test_partial_navigation_uses_bounded_memory_cache_and_explicit_modules(store
     assert "localStorage" not in source and "sessionStorage" not in source
     assert "eval(" not in source and "serviceWorker" not in source
     assert 'modules.has("live")&&modules.has("presets")' in source
+    assert 'if(!parsed.root.hasAttribute("data-refresh-managed"))revalidate' in source
+    assert 'link.dataset.fullReload="true"' in source
+    assert 'link.dataset.fullReload==="true"' in source
 
 
 def test_no_observations_does_not_present_legacy_average_as_new(store):

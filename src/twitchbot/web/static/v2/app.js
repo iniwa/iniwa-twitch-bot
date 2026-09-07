@@ -68,7 +68,7 @@
     const root=currentMain();if(!root||root.querySelector(".app-refresh-notice"))return;
     const notice=document.createElement("p");notice.className="app-refresh-notice";notice.setAttribute("role","status");
     notice.append(text);
-    const link=document.createElement("a");link.href=location.href;link.textContent="更新";notice.append(link);root.prepend(notice);
+    const link=document.createElement("a");link.href=location.href;link.dataset.fullReload="true";link.textContent="更新";notice.append(link);root.prepend(notice);
   };
   const apply=async(parsed,{restore=false}={})=>{
     await Promise.all([ensureStyles(parsed.doc),ensureModule(pageFamily(parsed.root))]);
@@ -100,7 +100,7 @@
     remember();const oldMain=currentMain(),oldTitle=document.title,oldUrl=displayedUrl;
     if(mode==="push")historyPush(url);else if(mode==="replace")history.replaceState({iniwa:true},"",url);
     try{
-      if(fresh){const parsed=parse(cached.html,cached.url);await apply(parsed,{restore});revalidate(url,cached.html,token);return;}
+      if(fresh){const parsed=parse(cached.html,cached.url);await apply(parsed,{restore});if(!parsed.root.hasAttribute("data-refresh-managed"))revalidate(url,cached.html,token);return;}
       const placeholder=document.createElement("main"),family=url.pathname.startsWith("/v2/history")?"history":url.pathname==="/v2/control"?"live":url.pathname==="/v2/presets"?"presets":url.pathname==="/v2/settings"?"settings":url.pathname==="/v2/automation"?"automation":url.pathname==="/v2/predictions"?"predictions":"community";placeholder.dataset.page=`${family}-loading`;placeholder.setAttribute("aria-busy","true");
       const heading=document.createElement("h1");heading.textContent=family==="history"?"配信履歴":family==="live"?"ライブ":family==="presets"?"配信セット":family==="settings"?"設定とバックアップ":family==="automation"?"自動化":family==="predictions"?"予想":"コミュニティ";
       const status=document.createElement("p");status.setAttribute("role","status");status.textContent="読み込んでいます。";placeholder.append(heading,status);
@@ -117,7 +117,7 @@
   const historyPush=url=>history.pushState({iniwa:true},"",url);
   const eligibleLink=event=>{
     const link=event.target.closest("a[href]");
-    if(!link||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||link.target||link.download||link.relList.contains("external")||link.origin!==location.origin)return null;
+    if(!link||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||link.target||link.download||link.dataset.fullReload==="true"||link.relList.contains("external")||link.origin!==location.origin)return null;
     const url=new URL(link.href),current=new URL(location.href);
     if(url.pathname===current.pathname&&url.search===current.search&&url.hash)return null;
     return supported(url)&&currentSupported()?url:null;
