@@ -25,8 +25,9 @@
 - 配信履歴は同一DB snapshot・同一`as_of`で新方式の派生要約を全対象に作成し、平均同接／最大同接／記録率をページング前にソート。旧集計列は使用せず、cursorをsort・order・revision・`as_of`へ結び付けた。
 - この段階の未実施は、架空データを使うブラウザ性能／表示計測、320px・200%・forced colors等の視覚確認。利用可能なブラウザ自動操作面がなかったためソースと隔離pytestまでを完了した。
 
-2026-09-07、上記を含む統合v2をソースcommit `1b89a9e`としてGiteaの`main`へpushし、
-そのcommitから対象arm64上でイメージを作成して本番へ反映した。反映前に手動バックアップを作成し、NAS保存確認済みの復旧点を保持した。
+2026-09-07、上記を含む統合v2をソースcommit `1b89a9e`としてGiteaとGitHubの`main`へpushした。
+対象arm64上で同じcommitのイメージを作成して一次確認後、GitHub Actionsのmulti-arch公開成功を確認し、
+GHCRのcommit由来の不変タグを本番へ反映した。反映前に手動バックアップを作成し、NAS保存確認済みの復旧点を保持した。
 既存Composeファイル、単一サービス、起動コマンド、user、host network、restart policy、永続化マウントは変更していない。
 サービスだけを再作成し、旧イメージはロールバック用に保持した。反映後はschema 11、container healthy、再起動0回、全worker runningを確認した。
 `/api/stream/status`を12回取得して全件HTTP 200（最大46.10ms）、新ナビ各画面、フォロー状態API、バックアップ一覧APIもHTTP 200だった。
