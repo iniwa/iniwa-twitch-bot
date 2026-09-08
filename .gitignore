@@ -10,3 +10,6 @@ CLAUDE_ja.md
 .env.*
 /data.db
 .venv-phase4b/
+
+# Local agent metadata
+.codex/
